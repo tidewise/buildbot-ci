@@ -7,19 +7,15 @@ resource "google_container_cluster" "primary" {
     remove_default_node_pool = true
     initial_node_count = 1
 
+    enable_legacy_abac = true
+
     # Setting an empty username and password explicitly disables basic auth
     master_auth {
         username = ""
         password = ""
-    }
-
-    node_config {
-        oauth_scopes = [
-            "https://www.googleapis.com/auth/compute",
-            "https://www.googleapis.com/auth/devstorage.read_only",
-            "https://www.googleapis.com/auth/logging.write",
-            "https://www.googleapis.com/auth/monitoring",
-        ]
+        client_certificate_config {
+            issue_client_certificate = true
+        }
     }
 }
 
