@@ -22,10 +22,11 @@ resource "google_container_cluster" "primary" {
 resource "google_container_node_pool" "system" {
     name       = "system-pool"
     cluster    = "${google_container_cluster.primary.name}"
-    node_count = 4
+    node_count = 2
 
     node_config {
-        machine_type = "f1-micro"
+        machine_type = "g1-small"
+        disk_size_gb = "10"
 
         labels = {
             system-role = "1"
@@ -41,32 +42,31 @@ resource "google_container_node_pool" "system" {
 }
 
 resource "google_container_node_pool" "build" {
-  provider   = "google-beta"
-  name       = "build-pool"
-  cluster    = "${google_container_cluster.primary.name}"
-  node_count = 1
+    provider   = "google-beta"
+    name       = "build-pool"
+    cluster    = "${google_container_cluster.primary.name}"
 
-  autoscaling = {
-      min_node_count = 0
-      max_node_count = 1
-  }
+    autoscaling = {
+        min_node_count = 0
+        max_node_count = 1
+    }
 
-  node_config {
-    machine_type = "zones/${var.zone}/machineType/custom-6-12032"
-    disk_size_gb = "20"
-    disk_type = "pd-ssd"
-    preemptible = true
+    node_config {
+        machine_type = "custom-6-12032"
+        disk_size_gb = "20"
+        disk_type = "pd-ssd"
+        preemptible = true
 
-    labels = { build-role = "1" }
-    taint = [{ key = "build-role", value = "1", effect = "NO_EXECUTE" }]
+        labels = { build-role = "1" }
+        taint = [{ key = "build-role", value = "1", effect = "NO_EXECUTE" }]
 
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/devstorage.read_only",
-      "https://www.googleapis.com/auth/logging.write",
-      "https://www.googleapis.com/auth/monitoring",
-    ]
-  }
+        oauth_scopes = [
+          "https://www.googleapis.com/auth/compute",
+          "https://www.googleapis.com/auth/devstorage.read_only",
+          "https://www.googleapis.com/auth/logging.write",
+          "https://www.googleapis.com/auth/monitoring",
+        ]
+    }
 }
 
 # The following outputs allow authentication and connectivity to the GKE Cluster
