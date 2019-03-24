@@ -20,6 +20,10 @@ module "k8s" {
     source = "./k8s"
     host     = "${module.gke.host}"
 
+    credentials = "${file("account.json")}"
+    project  = "${var.project}"
+    region   = "${var.region}"
+    zone     = "${var.zone}"
     client_certificate     = "${module.gke.client_certificate}"
     client_key             = "${module.gke.client_key}"
     cluster_ca_certificate = "${module.gke.cluster_ca_certificate}"
