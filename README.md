@@ -41,8 +41,8 @@ terraform apply
 
 After running terraform, you should have a Kubernetes cluster ready to use to
 build Rock workspaces. You may run `buildbot start --nodaemon` in the
-`buildbot/` folder and try to trigger the `autoproj cache` build to see if
+`master/` folder and try to trigger the `autoproj cache` build to see if
 everything is fine.
 
-From now, we recommend to copy the buildbot/ folder to your own repository and
+From now, we recommend to copy the `master/` folder to your own repository and
 tune it to your needs.

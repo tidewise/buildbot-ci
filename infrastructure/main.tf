@@ -27,3 +27,24 @@ module "k8s" {
     cluster_ca_certificate = "${module.gke.cluster_ca_certificate}"
 }
 
+output "k8s_host" {
+    value = "${module.gke.host}"
+}
+output "gce_project" {
+    value = "${var.project}"
+}
+output "gce_zone" {
+    value = "${var.zone}"
+}
+
+resource "template_dir" "buildbot" {
+    source_dir = "buildbot"
+    destination_dir = "${path.module}/../master/tf"
+
+    vars = {
+        sa_credentials = "${jsonencode(module.k8s.sa_credentials)}"
+        k8s_host = "${module.gke.host}",
+        ca_certificate = "${module.gke.cluster_ca_certificate}"
+    }
+}
+
