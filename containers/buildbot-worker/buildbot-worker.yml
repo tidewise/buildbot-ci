@@ -1,0 +1,5 @@
+tasks:
+    - name: "setup sudoers for autoproj to use apt-get"
+      copy:
+          src: files/etc/sudoers.d/buildbot
+          dest: /etc/sudoers.d/buildbot
