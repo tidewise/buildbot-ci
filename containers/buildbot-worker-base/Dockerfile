@@ -29,7 +29,7 @@ RUN         apt-get update && \
     # so we need to simulate that here.  See https://github.com/Yelp/dumb-init
     curl https://github.com/Yelp/dumb-init/releases/download/v1.2.1/dumb-init_1.2.1_amd64.deb -Lo /tmp/init.deb && dpkg -i /tmp/init.deb &&\
     # Install required python packages, and twisted
-    pip3 --no-cache-dir install 'twisted[tls]' && \
+    pip3 --no-cache-dir install 'twisted[tls]' 'txrequests' && \
     mkdir /buildbot &&\
     useradd -ms /bin/bash buildbot
 
