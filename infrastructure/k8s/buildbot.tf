@@ -26,7 +26,11 @@ data "kubernetes_secret" "buildbot" {
     }
 }
 
-output "sa_credentials" {
+output "ca_certificate" {
+    value = "${base64decode(var.cluster_ca_certificate)}"
+}
+
+output "sa_info" {
     value = "${data.kubernetes_secret.buildbot.data}"
 }
 

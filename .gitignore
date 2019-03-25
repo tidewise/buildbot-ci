@@ -4,3 +4,7 @@ infrastructure/terraform.tfvars
 master/tf
 master/buildbot.tac
 master/*.pyc
+master/http.log
+master/master.cfg.sample
+master/*.pid
+master/state.sqlite

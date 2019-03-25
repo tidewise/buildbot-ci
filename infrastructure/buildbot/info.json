@@ -1,0 +1,4 @@
+{
+    "k8s_url": "https://${k8s_host}",
+    "project": "${project}"
+}

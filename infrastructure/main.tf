@@ -42,9 +42,10 @@ resource "template_dir" "buildbot" {
     destination_dir = "${path.module}/../master/tf"
 
     vars = {
-        sa_credentials = "${jsonencode(module.k8s.sa_credentials)}"
+        sa_info = "${jsonencode(module.k8s.sa_info)}"
         k8s_host = "${module.gke.host}",
-        ca_certificate = "${module.gke.cluster_ca_certificate}"
+        k8s_ca_certificate = "${module.k8s.ca_certificate}"
+        project = "${var.project}"
     }
 }
 
