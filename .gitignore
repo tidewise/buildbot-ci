@@ -2,3 +2,5 @@ account.json
 infrastructure/.terraform/
 infrastructure/terraform.tfvars
 master/tf
+master/buildbot.tac
+master/*.pyc
