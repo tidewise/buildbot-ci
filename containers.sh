@@ -12,9 +12,11 @@ echo "Setting up for project ${project}"
 
 docker build -t gcr.io/$project/cache-apt containers/apt-cacher-ng
 docker build -t gcr.io/$project/cache-gem containers/gemstash
+docker build -t gcr.io/$project/volume-nfs containers/nfs
 docker pull rockcore/buildbot-worker-base
 docker build -t gcr.io/$project/buildbot-worker containers/buildbot-worker
 
 docker push gcr.io/$project/cache-apt
 docker push gcr.io/$project/cache-gem
+docker push gcr.io/$project/volume-nfs
 docker push gcr.io/$project/buildbot-worker
