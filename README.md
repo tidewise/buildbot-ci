@@ -37,12 +37,35 @@ To check that things are all OK. If they are, run
 
 ~~~
 terraform apply
+# The postprocess script MUST BE executed after each terraform apply
+./postprocess
 ~~~
 
 After running terraform, you should have a Kubernetes cluster ready to use to
-build Rock workspaces. You may run `buildbot start --nodaemon` in the
-`master/` folder and try to trigger the `autoproj cache` build to see if
-everything is fine.
+build Rock workspaces.
 
-From now, we recommend to copy the `master/` folder to your own repository and
-tune it to your needs.
+## Run buildbot to connect locally to your cluster
+
+You will need first to forward a public-accessible port to
+`localhost:9989` for the workers to connect to. I use [ngrok](https://ngrok.com/)
+for this.
+
+Once you do have the public IP and port, modify `SLAVE_TO_MASTER_FQDN` at the top of
+`master/master.cfg`.
+
+The best way to run the cluster locally is to execute the `buildbot-master`
+container. The `master.sh` script is meant to do that. Execute it from `master/`, e.g.
+
+~~~
+cd master
+../master.sh
+~~~
+
+**NOTE** As of now, the `buildbot/buildbot-master` container does not include what is
+necessary to run over kubernetes. This script runs `rockcore/buildbot-master` instead,
+which does.
+
+I suggest triggering the `autoproj cache` build to see if everything is fine.
+
+At this point, we recommend to copy the `master/` folder to your own repository
+and tune it to your needs.
