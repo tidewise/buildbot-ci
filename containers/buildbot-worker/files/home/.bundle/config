@@ -1,2 +1,2 @@
 ---
-BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/: "http://package-cache:9292"
+BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/: "http://cache-gem.default.svc.cluster.local:9292"

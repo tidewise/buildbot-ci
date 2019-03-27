@@ -1,1 +1,1 @@
-Acquire::http { Proxy "http://package-cache:3142"; }
+Acquire::http { Proxy "http://cache-apt.default.svc.cluster.local:3142"; }
