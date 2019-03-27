@@ -19,10 +19,7 @@ RUN sudo apt-get update && \
     sudo apt-get autoremove --purge -y && \
     sudo rm -rf /var/lib/apt/lists/*
 
-COPY files/home/.bundle/config /home/buildbot/.bundle/config
-
-USER root
-
+COPY --chown=buildbot files/home/.bundle/config /home/buildbot/.bundle/config
 COPY files/etc/apt/apt.conf.d/01cache /etc/apt/apt.conf.d/01cache
 
 USER buildbot
