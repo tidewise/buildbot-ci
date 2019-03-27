@@ -24,7 +24,7 @@ download the tool first.
 Then, get the credentials of a suitable service account (the GCE default service
 account will do). Download them and place them as `infrastructure/account.json`.
 
-Copy `infrastructure/main.tfvars.example` in `infrastructure/main.tfvars` and fill
+Copy `infrastructure/terraform.tfvars.example` in `infrastructure/terraform.tfvars` and fill
 in the variables. You may also set them on the command line if you prefer.
 
 Finally, run
