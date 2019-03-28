@@ -46,12 +46,15 @@ class BuildWorker(BaseWorker):
         pod_def = yield super().getPodSpec(build)
         spec = pod_def['spec']
 
+        cpu = build.getProperty('parallel_build_level', 1)
+        memory = build.getProperty('memory_per_build_process_G', 2)
+
         container = spec['containers'][0]
         container['imagePullPolicy'] = 'Always'
         container['resources'] = {
             'requests': {
-                'cpu': 6,
-                'memory': "10G"
+                'cpu': cpu,
+                'memory': f"{memory * cpu}G"
             }
         }
         container['volumeMounts'] = [
@@ -157,4 +160,9 @@ def Bootstrap(factory, url, vcstype="git", autoproj_branch=None, autobuild_branc
             "--no-interactive", *bootstrap_options, vcstype, url],
         haltOnFailure=True))
 
-
+def Build(factory):
+    p = util.Interpolate('-p%(prop:parallel_build_level:-1)s')
+    factory.addStep(steps.ShellCommand(
+        name="Build the workspace",
+        command=[".autoproj/bin/autoproj", "build", "--interactive=f", "-k", p],
+        haltOnFailure=True))
