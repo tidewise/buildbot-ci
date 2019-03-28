@@ -66,9 +66,8 @@ class BuildWorker(BaseWorker):
             }
         ]
         spec['tolerations'] = [{
-            'effect': 'NoExecute',
             'key': 'build-role',
-            'value': '1'
+            'operator': 'Exists'
         }]
         spec['volumes'] = [
             {
