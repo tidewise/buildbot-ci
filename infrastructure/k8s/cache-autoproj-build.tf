@@ -16,6 +16,14 @@ resource "kubernetes_service" "cache-autoproj-build" {
             {
                 name = "nfs4"
                 port = 2049
+            },
+            {
+                name = "mountd"
+                port = 20048
+            },
+            {
+                name = "rpcbind"
+                port = 111
             }
         ]
     }
