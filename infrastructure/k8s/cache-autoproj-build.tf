@@ -10,7 +10,7 @@ resource "kubernetes_service" "cache-autoproj-build" {
 
     spec {
         selector {
-            app = "${kubernetes_pod.cache-autoproj-build-server.metadata.0.name}"
+            app = "${kubernetes_pod.cache-autoproj-build-server.metadata.0.labels.app}"
         }
         port = [
             {

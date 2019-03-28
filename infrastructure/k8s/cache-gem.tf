@@ -13,7 +13,7 @@ resource "kubernetes_service" "cache-gem" {
 
     spec {
         selector {
-            app = "${kubernetes_pod.cache-gem.metadata.0.name}"
+            app = "${kubernetes_pod.cache-gem.metadata.0.labels.app}"
         }
         port = [
             {

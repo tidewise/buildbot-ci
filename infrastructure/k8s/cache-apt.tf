@@ -12,7 +12,7 @@ resource "kubernetes_service" "cache-apt" {
 
     spec {
         selector {
-            app = "${kubernetes_pod.cache-apt.metadata.0.name}"
+            app = "${kubernetes_pod.cache-apt.metadata.0.labels.app}"
         }
         port = [
             {
