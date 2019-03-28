@@ -44,9 +44,3 @@ resource "kubernetes_persistent_volume_claim" "cache-autoproj-import" {
         volume_name = "${kubernetes_persistent_volume.cache-autoproj-import.metadata.0.name}"
     }
 }
-
-########
-## Autoproj build cache
-#
-# Exposed as NFSv4, and mounted in the build pods
-
