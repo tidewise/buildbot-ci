@@ -95,6 +95,7 @@ def Update(factory, osdeps=True):
     factory.addStep(steps.ShellCommand(
         name="Update the workspace",
         command=[".autoproj/bin/autoproj", "update", *arguments, "--interactive=f", "-k"],
+        env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         haltOnFailure=True))
 
 def ImportCache(factory):
