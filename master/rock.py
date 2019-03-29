@@ -130,7 +130,11 @@ def Bootstrap(factory, url, vcstype="git", autoproj_branch=None, autobuild_branc
     else:
         seed_config = ""
 
-    seed_config += f"import_log_enabled: false"
+    seed_config += f"""
+import_log_enabled: false
+separate_prefixes: true
+    """
+
     factory.addStep(steps.StringDownload(seed_config,
         workerdest="seed-config.yml",
         name=f"Tuning Autoproj configuration"))
