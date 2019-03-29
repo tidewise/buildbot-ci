@@ -110,6 +110,7 @@ def ImportCache(factory):
 
 def Bootstrap(factory, url, vcstype="git", autoproj_branch=None, autobuild_branch=None,
               seed_config_path=None,
+              flavor="master",
               autoproj_url=AUTOPROJ_GIT_URL,
               autobuild_url=AUTOBUILD_GIT_URL):
 
@@ -133,6 +134,7 @@ def Bootstrap(factory, url, vcstype="git", autoproj_branch=None, autobuild_branc
     seed_config += f"""
 import_log_enabled: false
 separate_prefixes: true
+ROCK_SELECTED_FLAVOR: {flavor}
     """
 
     factory.addStep(steps.StringDownload(seed_config,
