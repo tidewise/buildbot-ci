@@ -84,6 +84,10 @@ resource "kubernetes_pod" "cache-autoproj-build-server" {
     }
 
     spec {
+        security_context {
+            fs_group = 2000
+        }
+
         container = [
             {
                 name = "cache-autoproj-build-server"
