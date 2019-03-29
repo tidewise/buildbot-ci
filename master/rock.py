@@ -183,6 +183,7 @@ def Build(factory):
     p = util.Interpolate('-p%(prop:parallel_build_level:-1)s')
 
     AutoprojStep(factory, "ci", "build", "--interactive=f", "-k", p,
+        "--cache", CACHE_BUILD_DIR,
         name="Building the workspace")
     AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
         name="Pushing to the build cache")
