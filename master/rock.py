@@ -85,6 +85,14 @@ class BuildWorker(BaseWorker):
         return pod_def
 
 
+def AutoprojStep(factory, *args, name=None, env={}):
+    if name is None:
+        name = f"autoproj {args[0]}"
+
+    factory.addStep(steps.ShellCommand(name=name,
+        command=[".autoproj/bin/autoproj", *args],
+        env=env, haltOnFailure=True))
+
 def Update(factory, osdeps=True):
     arguments = []
     if osdeps:
@@ -158,17 +166,23 @@ ROCK_SELECTED_FLAVOR: {flavor}
             workerdest="Gemfile.buildbot",
             name=f"Setup Gemfile to use autoproj={autoproj_branch} and autobuild={autobuild_branch}"))
 
-    factory.addStep(steps.ShellCommand(
+    factory.addStep(steps.ShellSequence(
         name="Bootstrap the workspace",
-        command=[
-            "ruby", "autoproj_bootstrap",
-            "--seed-config=seed-config.yml",
-            "--no-interactive", *bootstrap_options, vcstype, url],
+        commands=[
+            util.ShellArg(command=[
+                "ruby", "autoproj_bootstrap",
+                "--seed-config=seed-config.yml",
+                "--no-interactive", *bootstrap_options, vcstype, url], logfile="bootstrap"),
+            util.ShellArg(command=[
+                ".autoproj/bin/autoproj", "plugin", "install", "autoproj-ci",
+                "--git", "https://github.com/rock-core/autoproj-ci"], logfile="plugins")
+        ],
         haltOnFailure=True))
 
 def Build(factory):
     p = util.Interpolate('-p%(prop:parallel_build_level:-1)s')
-    factory.addStep(steps.ShellCommand(
-        name="Build the workspace",
-        command=[".autoproj/bin/autoproj", "build", "--interactive=f", "-k", p],
-        haltOnFailure=True))
+
+    AutoprojStep(factory, "ci", "build", "--interactive=f", "-k", p,
+        name="Building the workspace")
+    AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
+        name="Pushing to the build cache")
