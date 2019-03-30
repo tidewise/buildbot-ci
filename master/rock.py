@@ -196,11 +196,15 @@ ROCK_SELECTED_FLAVOR: {flavor}
             workerdest="Gemfile.buildbot",
             name=f"Setup Gemfile to use autoproj={autoproj_branch} and autobuild={autobuild_branch}"))
 
+    bundle_config = util.Interpolate(
+        'echo "BUNDLE_JOBS: \"%(prop:parallel_build_level:-1)s\"" >> /home/buildbot/.bundle/config')
     factory.addStep(steps.ShellSequence(
         name="Bootstrap",
         commands=[
             util.ShellArg(command=["wget", bootstrap_script_url],
                 logfile="download", haltOnFailure=True),
+            util.ShellArg(command=bundle_config, logfile="bundle-config",
+                haltOnFailure=True),
             util.ShellArg(command=[
                 "ruby", "autoproj_bootstrap",
                 "--seed-config=seed-config.yml",
