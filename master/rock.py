@@ -5,6 +5,7 @@ AUTOPROJ_GIT_URL  = "https://github.com/rock-core/autoproj"
 AUTOBUILD_GIT_URL = "https://github.com/rock-core/autobuild"
 
 CACHE_IMPORT_DIR = "/var/cache/autoproj/import"
+cache_import_lock = util.MasterLock("cache-import")
 CACHE_BUILD_DIR  = "/var/cache/autoproj/build"
 
 class BaseWorker(worker.KubeLatentWorker):
@@ -135,6 +136,7 @@ def Update(factory, osdeps=True):
             )
         ],
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
+        locks=[cache_import_lock.access('counting')],
         haltOnFailure=True))
 
 def CleanBuildCache(factory):
@@ -150,6 +152,7 @@ def UpdateImportCache(factory):
         name="Update the workspace's import cache",
         command=[".autoproj/bin/autoproj", "cache",
             CACHE_IMPORT_DIR, "--interactive=f", "-k"],
+        locks=[cache_import_lock.access('exclusive')],
         haltOnFailure=True))
 
 def Bootstrap(factory, url, vcstype="git", autoproj_branch=None, autobuild_branch=None,
