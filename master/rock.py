@@ -190,7 +190,7 @@ ROCK_SELECTED_FLAVOR: {flavor}
         if autobuild_branch is None:
             gemfile += f"\ngem 'autobuild'"
         else:
-            gemfile += f"\ngem 'autobuild', git: {autobuild_url}, branch: '{autobuild_branch}'"
+            gemfile += f"\ngem 'autobuild', git: '{autobuild_url}', branch: '{autobuild_branch}'"
 
         factory.addStep(steps.StringDownload(gemfile,
             workerdest="Gemfile.buildbot",
