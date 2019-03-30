@@ -21,11 +21,13 @@ RUN sudo apt-get update && \
 
 COPY --chown=buildbot files/home/.bundle/config /home/buildbot/.bundle/config
 COPY files/etc/apt/apt.conf.d/01cache /etc/apt/apt.conf.d/01cache
+COPY buildbot.tac /buildbot/buildbot.tac
 
 USER root
 
 RUN mkdir -p /var/cache/autoproj/import && \
     mkdir -p /var/cache/autoproj/build && \
     chmod -R go+rx /var/cache/autoproj
+
 
 USER buildbot
