@@ -218,7 +218,8 @@ def Build(factory):
         "--cache", CACHE_BUILD_DIR,
         name="Building the workspace")
     AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
-        name="Pushing to the build cache")
+        name="Pushing to the build cache",
+        alwaysRun=True)
 
 def BuildReport(factory):
     AutoprojStep(factory, "ci", "build-report", "--interactive=f", "buildbot-report",
