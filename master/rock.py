@@ -107,13 +107,13 @@ class BuildWorker(BaseWorker):
         return pod_def
 
 
-def AutoprojStep(factory, *args, name=None, env={}):
+def AutoprojStep(factory, *args, name=None, **kwargs):
     if name is None:
         name = f"autoproj {args[0]}"
 
     factory.addStep(steps.ShellCommand(name=name,
         command=[".autoproj/bin/autoproj", *args],
-        env=env, haltOnFailure=True))
+        haltOnFailure=True, **kwargs))
 
 def Update(factory, osdeps=True):
     arguments = []
@@ -217,3 +217,10 @@ def Build(factory):
         name="Building the workspace")
     AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
         name="Pushing to the build cache")
+
+def BuildReport(factory):
+    AutoprojStep(factory, "ci", "build-report", "--interactive=f", "buildbot-report",
+        name="Generating build report")
+    factory.addStep(steps.DirectoryUpload(name="Download the generated report",
+        workersrc="buildbot-report",
+        masterdest=util.Interpolate("build_reports/%(prop:buildername)s-%(prop:buildnumber)s")))
