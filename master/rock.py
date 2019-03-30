@@ -208,10 +208,15 @@ ROCK_SELECTED_FLAVOR: {flavor}
             util.ShellArg(command=[
                 "ruby", "autoproj_bootstrap",
                 "--seed-config=seed-config.yml",
-                "--no-interactive", *bootstrap_options, vcstype, url], logfile="bootstrap"),
+                "--no-interactive", *bootstrap_options, vcstype, url],
+                logfile="bootstrap", haltOnFailure=True),
             util.ShellArg(command=[
                 ".autoproj/bin/autoproj", "plugin", "install", "autoproj-ci",
-                "--git", "https://github.com/rock-core/autoproj-ci"], logfile="plugins")
+                "--git", "https://github.com/rock-core/autoproj-ci"],
+                logfile="plugins", haltOnFailure=True),
+            util.ShellArg(
+                command=[".autoproj/bin/autoproj", "test", "enable"],
+                logfile="enable-tests"),
         ],
         haltOnFailure=True))
 
