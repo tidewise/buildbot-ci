@@ -40,6 +40,28 @@ class ImportCacheWorker(BaseWorker):
         ]
         return pod_def
 
+class BuildCacheWorker(BaseWorker):
+    @defer.inlineCallbacks
+    def getPodSpec(self, build):
+        pod_def = yield super().getPodSpec(build)
+        spec = pod_def['spec']
+
+        container = spec['containers'][0]
+        container['imagePullPolicy'] = 'Always'
+        container['volumeMounts'] = [
+            {
+                'name': 'cache-autoproj-build',
+                'mountPath': '/var/cache/autoproj/build',
+            }
+        ]
+        spec['volumes'] = [
+            {
+                'name': 'cache-autoproj-build',
+                'persistentVolumeClaim': { 'claimName': 'cache-autoproj-build' }
+            }
+        ]
+        return pod_def
+
 class BuildWorker(BaseWorker):
     @defer.inlineCallbacks
     def getPodSpec(self, build):
@@ -109,7 +131,15 @@ def Update(factory, osdeps=True):
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         haltOnFailure=True))
 
-def ImportCache(factory):
+def CleanBuildCache(factory):
+    factory.addStep(steps.ShellCommand(
+        name="Clean the build cache",
+        command=f"rm -rf {CACHE_BUILD_DIR}/*"))
+    factory.addStep(steps.ShellCommand(
+        name="Check result",
+        command=["find", CACHE_BUILD_DIR]))
+
+def UpdateImportCache(factory):
     factory.addStep(steps.ShellCommand(
         name="Update the workspace's import cache",
         command=[".autoproj/bin/autoproj", "cache",
