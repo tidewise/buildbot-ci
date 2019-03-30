@@ -116,18 +116,24 @@ def AutoprojStep(factory, *args, name=None, **kwargs):
         haltOnFailure=True, **kwargs))
 
 def Update(factory, osdeps=True):
+    osdeps_update = []
     arguments = []
+
     if osdeps:
-        factory.addStep(steps.ShellCommand(
-            name="Update APT cache",
-            command=["sudo", "apt-get", "update"],
-            haltOnFailure=True))
+        osdeps_update.append(util.ShellArg(
+            command=["sudo", "apt-get", "update"], logfile="apt-update"))
     else:
         arguments.append("--no-osdeps")
 
-    factory.addStep(steps.ShellCommand(
-        name="Update the workspace",
-        command=[".autoproj/bin/autoproj", "update", *arguments, "--interactive=f", "-k"],
+    factory.addStep(steps.ShellSequence(
+        name="Update",
+        commands=[*osdeps_update,
+            util.ShellArg(
+                command=[".autoproj/bin/autoproj", "update", *arguments,
+                    "--interactive=f", "-k"],
+                logfile="autoproj-update"
+            )
+        ],
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         haltOnFailure=True))
 
@@ -156,12 +162,6 @@ def Bootstrap(factory, url, vcstype="git", autoproj_branch=None, autobuild_branc
         bootstrap_script_url = "https://rock-robotics.org/autoproj_bootstrap"
     else:
         bootstrap_script_url = f"https://raw.githubusercontent.com/rock-core/autoproj/{autoproj_branch}/bin/autoproj_bootstrap"
-
-    factory.addStep(steps.ShellCommand(
-        name="Download the Autoproj bootstrap script",
-        command=["wget", bootstrap_script_url],
-        haltOnFailure=True))
-
 
     if seed_config_path:
         with open(seed_config_path, 'r') as f:
@@ -197,8 +197,10 @@ ROCK_SELECTED_FLAVOR: {flavor}
             name=f"Setup Gemfile to use autoproj={autoproj_branch} and autobuild={autobuild_branch}"))
 
     factory.addStep(steps.ShellSequence(
-        name="Bootstrap the workspace",
+        name="Bootstrap",
         commands=[
+            util.ShellArg(command=["wget", bootstrap_script_url],
+                logfile="download", haltOnFailure=True),
             util.ShellArg(command=[
                 "ruby", "autoproj_bootstrap",
                 "--seed-config=seed-config.yml",
