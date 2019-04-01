@@ -1,8 +1,10 @@
 account.json
 infrastructure/.terraform/
 infrastructure/terraform.tfvars
+
 master/tf
 master/buildbot.tac
+master/build_reports
 master/*.pyc
 master/http.log
 master/http.log.*
