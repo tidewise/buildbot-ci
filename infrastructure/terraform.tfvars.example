@@ -4,3 +4,7 @@ project =
 # Set the zone. Note that us-central1-a is the cheapest, and you don't really
 # need to be near the edge given the application
 zone = "us-central1-a"
+project = ""
+region = "us-central1"
+zone = "us-central1-a"
+cluster_name = ""

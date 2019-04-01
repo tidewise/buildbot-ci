@@ -12,3 +12,5 @@ master/__pycache__
 master/master.cfg.sample
 master/*.pid
 master/state.sqlite
+infrastructure/terraform.tfstate*
+infrastructure/.terraform.tfstate*

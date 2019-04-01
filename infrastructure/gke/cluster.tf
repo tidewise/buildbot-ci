@@ -1,5 +1,5 @@
 resource "google_container_cluster" "primary" {
-    name   = "seabots-build"
+    name   = "${var.cluster_name}"
 
     # We can't create a cluster with no node pool defined, but we want to only use
     # separately managed node pools. So we create the smallest possible default
