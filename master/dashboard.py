@@ -11,11 +11,12 @@ def Create(name):
     app = Flask(name, root_path=os.path.dirname(__file__))
     # this allows to work on the template without having to restart Buildbot
     app.config['TEMPLATES_AUTO_RELOAD'] = True
-    app.add_url_rule("/index.html", "index", lambda: main(app))
+    app.add_url_rule("/index.html", "index", lambda: dashboard(app))
+    app.add_url_rule("/logs/<buildname>/<path:packagename>/<logtype>", "log_get", log_get)
     return app
 
 
-def main(app):
+def dashboard(app):
     # This code fetches build data from the data api, and give it to the
     # template
     builders = app.buildbot_api.dataGet("/builders")
@@ -29,6 +30,27 @@ def main(app):
 
     builds = compute_build_info(builds, builders)
     return render_template('dashboard.html', builds=builds)
+
+def log_get(buildname, packagename, logtype):
+    try:
+        build_reports = Path("build_reports").resolve(strict=True)
+        path = build_reports / buildname / 'logs' / f"{packagename}-{logtype}.log"
+        path = path.resolve(strict=True)
+        # Make sure our arguments are not trying to get us out of build_reports/
+        # This raises if `path` does not start with `build_reports`
+        path.relative_to(build_reports)
+
+        log_contents = path.read_text()
+        return render_template('log.html',
+            buildname=buildname, packagename=packagename,
+            logtype=logtype, log_contents=log_contents)
+    except Exception as error:
+        return render_template('log.html',
+            error=error,
+            buildname=buildname, packagename=packagename,
+            logtype=logtype, log_contents=log_contents)
+
+
 
 
 def compute_build_info(builds, builders):
@@ -53,11 +75,12 @@ def compute_build_info(builds, builders):
     return info
 
 def package_info_for(buildname):
-    path = Path(f'build_reports/{buildname}/report.json')
-    if not path.is_file():
+    basedir = Path(f'build_reports/{buildname}')
+    report_path = basedir / 'report.json'
+    if not report_path.is_file():
         return
 
-    with open(path) as f:
+    with open(report_path) as f:
         info = json.loads(f.read())
 
     packages = []
@@ -65,6 +88,7 @@ def package_info_for(buildname):
         pkg = info['packages'][pkg_name]
         pkg['name'] = pkg_name
         pkg['status'] = compute_package_status(pkg)
+        pkg['logs'] = compute_package_logs(pkg, basedir)
         packages.append(pkg)
 
     status_order = {
@@ -104,3 +128,17 @@ def compute_package_status(pkg):
         return [{'badge': 'SUCCESS', 'text': 'success'}]
     else:
         return [{'badge': 'SKIPPED', 'text': 'skipped'}]
+
+def compute_package_logs(pkg, basedir):
+    logs = {}
+    pkg_elements = pkg['name'].split('/')
+    basename = pkg_elements.pop()
+    logdir = basedir.joinpath('logs', *pkg_elements)
+    slice_start = len(basename) + 1
+    for path in logdir.iterdir():
+        if path.is_file() and path.match(f"{basename}-*.log"):
+            slice_end = len(path.name) - 4
+            log_type = path.name[slice_start:slice_end]
+            logs[log_type] = path
+
+    return logs

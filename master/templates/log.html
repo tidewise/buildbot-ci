@@ -1,0 +1,18 @@
+<div class="content">
+    <div class="container">
+        {% if error %}
+        <div class="row">
+            Log request failed for phase '{{ logtype }}' for package {{ packagename }} on {{ buildname }}
+        </div>
+        {% else %}
+        <div class="row">
+            Log for phase '{{ logtype }}' for package {{ packagename }} on {{ buildname }}
+        </div>
+        <div class="row">
+            <pre>
+                {{ log_contents }}
+            </pre>
+        </div>
+        {% endif %}
+    </div>
+</div>

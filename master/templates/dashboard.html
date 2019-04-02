@@ -20,6 +20,9 @@
                     {% for package in build['report']['packages'] %}
                     <li class="list-group-item">
                         <span class="pull-right">
+                            {% for log in package['logs'] %}
+                            <a href="{{ url_for('log_get', buildname=build['name'], packagename=package['name'], logtype=log) }}">{{ log }}</a>
+                            {% endfor %}
                             {% for status in package['status'] %}
                             <span class="badge-status results_{{ status['badge'] }}">
                                 {{ status['text'] }}
