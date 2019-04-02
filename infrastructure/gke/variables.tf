@@ -2,4 +2,4 @@ variable "project" {}
 variable "region" {}
 variable "zone" {}
 variable "credentials" {}
-variable cluster_name {}
+variable "cluster_name" {}

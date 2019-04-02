@@ -1,10 +1,10 @@
 # The Google Cloud project name
-project = 
-
+project = ""
 # Set the zone. Note that us-central1-a is the cheapest, and you don't really
 # need to be near the edge given the application
 zone = "us-central1-a"
-project = ""
+# region can be implied from the zone, but sometimes is necessary
+# to explicitely state it
 region = "us-central1"
-zone = "us-central1-a"
+# the name given to the Kubernetes cluster
 cluster_name = ""
