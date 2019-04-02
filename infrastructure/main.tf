@@ -1,4 +1,6 @@
 variable "project" { }
+variable "cluster_name" { }
+
 variable "region" {
     default = "us-central1"
 }
@@ -12,6 +14,7 @@ module "gke" {
     project  = "${var.project}"
     region   = "${var.region}"
     zone     = "${var.zone}"
+    cluster_name = "${var.cluster_name}"
 }
 
 module "k8s" {
