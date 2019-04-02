@@ -4,7 +4,16 @@
             {% for build in builds %}
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    {{ build['name'] }}
+                    <a href="/#/builders/{{ build['builder_id'] }}/builds/{{ build['id'] }}">
+                        {{ build['builder_name'] }}/{{ build['id'] }}
+                    </a>
+                    <span class="pull-right">
+                        {% for status in build['summary'] %}
+                        <span class="badge-status results_{{ status['badge'] }}">
+                            {{ status['text'] }}: {{ status['count'] }}
+                        </span>
+                        {% endfor %}
+                    </span>
                 </div>
 
                 <ul class="list-group">

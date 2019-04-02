@@ -38,13 +38,16 @@ def compute_build_info(builds, builders):
             if build['builderid'] == builder['builderid']:
                 name = f"{builder['name']}-{build['buildid']}"
                 report = package_info_for(name)
-                build_info = {
-                    'id': build['buildid'],
-                    'name': name,
-                    'builder_name': builder['name'],
-                    'report': report
-                }
                 if not report is None:
+                    summary = build_summary(report)
+                    build_info = {
+                        'id': build['buildid'],
+                        'name': name,
+                        'builder_id': build['builderid'],
+                        'builder_name': builder['name'],
+                        'summary': summary,
+                        'report': report
+                    }
                     info.append(build_info)
 
     return info
@@ -73,6 +76,21 @@ def package_info_for(buildname):
     packages.sort(key=lambda pkg: [status_order[pkg['status'][0]['text']], pkg['name']])
     info['packages'] = packages
     return info
+
+def build_summary(report):
+    results = {}
+    for pkg in report['packages']:
+        for status in pkg['status']:
+            if status['text'] in results:
+                results[status['text']]['count'] += 1
+            else:
+                results[status['text']] = {
+                    'badge': status['badge'],
+                    'text': status['text'],
+                    'count': 1
+                }
+
+    return results.values()
 
 def status_order(status):
     return min(status_order[s['text']] for s in status)
