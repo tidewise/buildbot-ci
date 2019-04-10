@@ -8,3 +8,9 @@ token = JSON.load(json)['token']
 File.open(File.join(tf_dir, 'k8s-sa-token'), 'w', 0o600) do |io|
     io.write token
 end
+File.chmod(0600, File.join(tf_dir, 'k8s-sa-info'))
+File.chmod(0600, File.join(tf_dir, 'info.json'))
+File.chmod(0600, File.join(tf_dir, 'k8s-ca-certificate'))
+
+
+
