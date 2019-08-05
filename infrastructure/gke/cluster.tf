@@ -46,7 +46,7 @@ resource "google_container_node_pool" "build" {
     name       = "build-pool"
     cluster    = "${google_container_cluster.primary.name}"
 
-    autoscaling = {
+    autoscaling {
         min_node_count = 0
         max_node_count = 1
     }
@@ -58,7 +58,11 @@ resource "google_container_node_pool" "build" {
         preemptible = true
 
         labels = { build-role = "1" }
-        taint = [{ key = "build-role", value = "1", effect = "NO_EXECUTE" }]
+        taint {
+          key = "build-role"
+          value = "1"
+          effect = "NO_EXECUTE"
+        }
 
         oauth_scopes = [
           "https://www.googleapis.com/auth/compute",

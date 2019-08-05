@@ -15,7 +15,7 @@ resource "kubernetes_persistent_volume" "cache-autoproj-import" {
     }
 
     spec {
-        capacity {
+        capacity = {
             storage = "10Gi"
         }
         storage_class_name = "standard"
@@ -37,7 +37,7 @@ resource "kubernetes_persistent_volume_claim" "cache-autoproj-import" {
     spec {
         access_modes = ["ReadOnlyMany", "ReadWriteOnce"]
         resources {
-            requests {
+            requests = {
                 storage = "10G"
             }
         }

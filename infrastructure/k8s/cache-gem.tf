@@ -12,15 +12,13 @@ resource "kubernetes_service" "cache-gem" {
     }
 
     spec {
-        selector {
+        selector = {
             app = "${kubernetes_pod.cache-gem.metadata.0.labels.app}"
         }
-        port = [
-            {
-                name = "cache-gem"
-                port = 9292
-            }
-        ]
+        port {
+            name = "cache-gem"
+            port = 9292
+        }
     }
 }
 
@@ -34,31 +32,27 @@ resource "google_compute_disk" "cache-gem" {
 resource "kubernetes_pod" "cache-gem" {
     metadata {
         name = "cache-gem"
-        labels {
+        labels = {
             app = "cache-gem"
         }
     }
 
     spec {
-        container = [
-            {
-                image = "gcr.io/${var.project}/cache-gem"
-                image_pull_policy = "Always"
+        container {
+            image = "gcr.io/${var.project}/cache-gem"
+            image_pull_policy = "Always"
+            name = "cache-gem"
+            volume_mount {
+                mount_path = "/var/cache/gem"
                 name = "cache-gem"
-                volume_mount {
-                    mount_path = "/var/cache/gem"
-                    name = "cache-gem"
-                }
             }
-        ]
-        volume = [
-            {
-                name = "cache-gem"
-                gce_persistent_disk {
-                    pd_name = "${google_compute_disk.cache-gem.name}"
-                }
+        }
+        volume {
+            name = "cache-gem"
+            gce_persistent_disk {
+                pd_name = "${google_compute_disk.cache-gem.name}"
             }
-        ]
+        }
     }
 }
 

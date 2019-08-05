@@ -27,7 +27,13 @@ account will do). Download them and place them as `infrastructure/account.json`.
 Copy `infrastructure/terraform.tfvars.example` in `infrastructure/terraform.tfvars` and fill
 in the variables. You may also set them on the command line if you prefer.
 
-Finally, run
+Finally, **within the infrastructure/ folder**, run
+
+~~~
+terraform init
+~~~
+
+(init needs to be run only once). You can then check what will be done with
 
 ~~~
 terraform plan

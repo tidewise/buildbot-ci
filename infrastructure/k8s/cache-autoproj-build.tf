@@ -9,23 +9,21 @@ resource "kubernetes_service" "cache-autoproj-build" {
     }
 
     spec {
-        selector {
+        selector = {
             app = "${kubernetes_pod.cache-autoproj-build-server.metadata.0.labels.app}"
         }
-        port = [
-            {
-                name = "nfs4"
-                port = 2049
-            },
-            {
-                name = "mountd"
-                port = 20048
-            },
-            {
-                name = "rpcbind"
-                port = 111
-            }
-        ]
+        port {
+            name = "nfs4"
+            port = 2049
+        }
+        port {
+            name = "mountd"
+            port = 20048
+        }
+        port {
+            name = "rpcbind"
+            port = 111
+        }
     }
 }
 
@@ -42,7 +40,7 @@ resource "kubernetes_persistent_volume" "cache-autoproj-build" {
     }
 
     spec {
-        capacity {
+        capacity = {
             storage = "20G"
         }
         # Without this, the claim (where class_name == "standard") would
@@ -67,7 +65,7 @@ resource "kubernetes_persistent_volume_claim" "cache-autoproj-build" {
     spec {
         access_modes = ["ReadWriteMany"]
         resources {
-            requests {
+            requests = {
                 storage = "20G"
             }
         }
@@ -78,7 +76,7 @@ resource "kubernetes_persistent_volume_claim" "cache-autoproj-build" {
 resource "kubernetes_pod" "cache-autoproj-build-server" {
     metadata {
         name = "cache-autoproj-build-server"
-        labels {
+        labels = {
             app = "cache-autoproj-build"
         }
     }
@@ -88,35 +86,31 @@ resource "kubernetes_pod" "cache-autoproj-build-server" {
             fs_group = 2000
         }
 
-        container = [
-            {
-                name = "cache-autoproj-build-server"
-                image = "gcr.io/${var.project}/volume-nfs"
-                image_pull_policy = "Always"
+        container {
+            name = "cache-autoproj-build-server"
+            image = "gcr.io/${var.project}/volume-nfs"
+            image_pull_policy = "Always"
 
-                security_context {
-                    privileged = true
-                }
-
-                volume_mount {
-                    name = "cache-autoproj-build"
-                    # MUST BE /exports
-                    #
-                    # You cannot mount more than one NFS folder
-                    # in /exports as NFS does NOT support exposing overlayfs
-                    # folders. This would simply NOT work
-                    mount_path = "/exports"
-                }
+            security_context {
+                privileged = true
             }
-        ]
-        volume = [
-            {
+
+            volume_mount {
                 name = "cache-autoproj-build"
-                gce_persistent_disk {
-                    pd_name = "${google_compute_disk.cache-autoproj-build.name}"
-                }
+                # MUST BE /exports
+                #
+                # You cannot mount more than one NFS folder
+                # in /exports as NFS does NOT support exposing overlayfs
+                # folders. This would simply NOT work
+                mount_path = "/exports"
             }
-        ]
+        }
+        volume {
+            name = "cache-autoproj-build"
+            gce_persistent_disk {
+                pd_name = "${google_compute_disk.cache-autoproj-build.name}"
+            }
+        }
     }
 }
 
