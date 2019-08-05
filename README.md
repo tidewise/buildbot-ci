@@ -75,3 +75,19 @@ I suggest triggering the `autoproj cache` build to see if everything is fine.
 
 At this point, we recommend to copy the `master/` folder to your own repository
 and tune it to your needs.
+
+## Using app.terraform.io for state management
+
+Just rename `remote.tf.example` into `remote.tf` and update the empty variables.
+You will also need to register your Terraform API token in `~/.terraformrc` by
+adding the following block:
+
+~~~
+credentials "app.terraform.io" {
+    token = "$TOKEN"
+}
+~~~
+
+**NOTE**: make sure that `.terraformrc` is readable and writable only for the
+user.
+
