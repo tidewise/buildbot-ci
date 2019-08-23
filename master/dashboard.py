@@ -20,7 +20,7 @@ def dashboard(app):
     # This code fetches build data from the data api, and give it to the
     # template
     builders = app.buildbot_api.dataGet("/builders")
-    builds   = app.buildbot_api.dataGet("/builds", limit=20)
+    builds   = app.buildbot_api.dataGet("/builds", limit=20, order=["-buildid"])
 
     # properties are actually not used in the template example, but this is
     # how you get more properties
