@@ -155,6 +155,38 @@ def UpdateImportCache(factory):
         locks=[cache_import_lock.access('exclusive')],
         haltOnFailure=True))
 
+def GitCredentials(factory, url, credentials):
+    """Register credentials to be used by git to access a given url
+
+    Parameters: 
+    factory: the Buildbot factory
+    url (string): the git base URL, e.g. https://github.com
+    credentials (string|secret): the credentials, in a format that the git
+        credential helper understands
+
+    For instance, to use a GitHub personal access token, one could define a
+    Buildbot secret with
+
+    protocol=https
+    host=github.com
+    username=$API_KEY
+    password=
+
+    And use it with
+
+    rock.GitCredentials(factory, "https://github.com", util.Secret("github_credentials"))
+    """
+
+    factory.addStep(steps.ShellCommand(
+        name=f"Setting up git to use our credentials for {url}",
+        command=["git", "config", "--global", f"credential.{url}.helper", "cache"],
+        haltOnFailure=True))
+    factory.addStep(steps.ShellCommand(
+        name=f"Setting up credentials for {url}",
+        command=["git", "credential", "approve"],
+        initialStdin=credentials,
+        haltOnFailure=True))
+
 def Bootstrap(factory, url, vcstype="git", autoproj_branch=None, autobuild_branch=None,
               seed_config_path=None,
               flavor="master",
