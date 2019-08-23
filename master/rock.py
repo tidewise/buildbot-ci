@@ -30,7 +30,7 @@ class ImportCacheWorker(BaseWorker):
             {
                 'name': 'cache-autoproj-import',
                 'mountPath': '/var/cache/autoproj/import',
-                'readOnly': True
+                'readOnly': False
             }
         ]
         spec['volumes'] = [
