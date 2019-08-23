@@ -6,7 +6,7 @@ AUTOBUILD_GIT_URL = "https://github.com/rock-core/autobuild"
 
 CACHE_IMPORT_DIR = "/var/cache/autoproj/import"
 cache_import_lock = util.MasterLock("cache-import")
-CACHE_BUILD_DIR  = "/var/cache/autoproj/build"
+CACHE_BUILD_DIR = util.Interpolate('/var/cache/autoproj/build/%(prop:buildername)s')
 
 class BaseWorker(worker.KubeLatentWorker):
     @defer.inlineCallbacks
@@ -142,7 +142,7 @@ def Update(factory, osdeps=True):
 def CleanBuildCache(factory):
     factory.addStep(steps.ShellCommand(
         name="Clean the build cache",
-        command=f"rm -rf {CACHE_BUILD_DIR}/*"))
+        command=["rm", "-rf", CACHE_BUILD_DIR]))
     factory.addStep(steps.ShellCommand(
         name="Check result",
         command=["find", CACHE_BUILD_DIR]))
