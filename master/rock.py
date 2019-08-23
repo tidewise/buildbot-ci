@@ -235,7 +235,9 @@ def Build(factory):
 
 def BuildReport(factory):
     AutoprojStep(factory, "ci", "build-report", "--interactive=f", "buildbot-report",
-        name="Generating build report")
+        name="Generating build report",
+        alwaysRun=True)
     factory.addStep(steps.DirectoryUpload(name="Download the generated report",
         workersrc="buildbot-report",
-        masterdest=util.Interpolate("build_reports/%(prop:buildername)s-%(prop:buildnumber)s")))
+        masterdest=util.Interpolate("build_reports/%(prop:buildername)s-%(prop:buildnumber)s"),
+        alwaysRun=True))
