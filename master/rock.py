@@ -228,9 +228,11 @@ def Build(factory):
 
     AutoprojStep(factory, "ci", "build", "--interactive=f", "-k", p,
         "--cache", CACHE_BUILD_DIR,
+        env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         name="Building the workspace")
     AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
         name="Pushing to the build cache",
+        env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         alwaysRun=True)
 
 def BuildReport(factory):
