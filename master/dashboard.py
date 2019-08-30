@@ -66,6 +66,7 @@ def compute_build_info(builds, builders):
                         'id': build['buildid'],
                         'name': name,
                         'builder_id': build['builderid'],
+                        'build_number': build['number'],
                         'builder_name': builder['name'],
                         'summary': summary,
                         'report': report

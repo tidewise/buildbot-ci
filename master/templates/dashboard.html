@@ -4,8 +4,8 @@
             {% for build in builds %}
             <div class="panel panel-default">
                 <div class="panel-heading">
-                    <a href="/#/builders/{{ build['builder_id'] }}/builds/{{ build['id'] }}">
-                        {{ build['builder_name'] }}/{{ build['id'] }}
+                    <a href="/#/builders/{{ build['builder_id'] }}/builds/{{ build['build_number'] }}">
+                        {{ build['builder_name'] }}/{{ build['build_number'] }}
                     </a>
                     <span class="pull-right">
                         {% for status in build['summary'] %}
