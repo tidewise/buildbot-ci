@@ -187,7 +187,7 @@ def GitCredentials(factory, url, credentials):
         initialStdin=credentials,
         haltOnFailure=True))
 
-def Bootstrap(factory, url, vcstype="git", autoproj_branch=None, autobuild_branch=None,
+def Bootstrap(factory, *buildconf_source, vcstype="git", autoproj_branch=None, autobuild_branch=None,
               seed_config_path=None,
               flavor="master",
               autoproj_url=AUTOPROJ_GIT_URL,
@@ -243,7 +243,7 @@ ROCK_SELECTED_FLAVOR: {flavor}
             util.ShellArg(command=[
                 "ruby", "autoproj_bootstrap",
                 "--seed-config=seed-config.yml",
-                "--no-interactive", *bootstrap_options, vcstype, url],
+                "--no-interactive", *bootstrap_options, vcstype, *buildconf_source],
                 logfile="bootstrap", haltOnFailure=True),
             util.ShellArg(command=[
                 ".autoproj/bin/autoproj", "plugin", "install", "autoproj-ci",
