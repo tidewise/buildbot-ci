@@ -3,11 +3,11 @@ from twisted.internet import defer
 
 AUTOPROJ_GIT_URL  = "https://github.com/rock-core/autoproj"
 AUTOBUILD_GIT_URL = "https://github.com/rock-core/autobuild"
+AUTOPROJ_CI_GIT_URL = "https://github.com/rock-core/autoproj-ci"
 
 CACHE_IMPORT_DIR = "/var/cache/autoproj/import"
 cache_import_lock = util.MasterLock("cache-import")
 CACHE_BUILD_DIR = util.Interpolate('/var/cache/autoproj/build/%(prop:buildername)s')
-
 class BaseWorker(worker.KubeLatentWorker):
     @defer.inlineCallbacks
     def getPodSpec(self, build):
@@ -187,11 +187,17 @@ def GitCredentials(factory, url, credentials):
         initialStdin=credentials,
         haltOnFailure=True))
 
-def Bootstrap(factory, *buildconf_source, vcstype="git", autoproj_branch=None, autobuild_branch=None,
+def Bootstrap(factory, buildconf_url,
+              buildconf_default_branch="master",
+              vcstype="git",
+              autoproj_branch=None,
+              autobuild_branch=None,
+              autoproj_ci_branch=None,
               seed_config_path=None,
               flavor="master",
               autoproj_url=AUTOPROJ_GIT_URL,
-              autobuild_url=AUTOBUILD_GIT_URL):
+              autobuild_url=AUTOBUILD_GIT_URL,
+              autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
 
     if autoproj_branch is None:
         bootstrap_script_url = "https://rock-robotics.org/autoproj_bootstrap"
@@ -231,6 +237,10 @@ ROCK_SELECTED_FLAVOR: {flavor}
             workerdest="Gemfile.buildbot",
             name=f"Setup Gemfile to use autoproj={autoproj_branch} and autobuild={autobuild_branch}"))
 
+    autoproj_ci_args=[]
+    if autoproj_ci_branch is not None:
+        autoproj_ci_args=["--git", autoproj_ci_url, "--branch", autoproj_ci_branch]
+
     bundle_config = util.Interpolate(
         'echo "BUNDLE_JOBS: \"%(prop:parallel_build_level:-1)s\"" >> /home/buildbot/.bundle/config')
     factory.addStep(steps.ShellSequence(
@@ -243,11 +253,11 @@ ROCK_SELECTED_FLAVOR: {flavor}
             util.ShellArg(command=[
                 "ruby", "autoproj_bootstrap",
                 "--seed-config=seed-config.yml",
-                "--no-interactive", *bootstrap_options, vcstype, *buildconf_source],
+                "--no-interactive", *bootstrap_options, vcstype, buildconf_url,
+                util.Interpolate(f"branch=%(prop:branch:-{buildconf_default_branch})s")],
                 logfile="bootstrap", haltOnFailure=True),
             util.ShellArg(command=[
-                ".autoproj/bin/autoproj", "plugin", "install", "autoproj-ci",
-                "--git", "https://github.com/rock-core/autoproj-ci"],
+                ".autoproj/bin/autoproj", "plugin", "install", "autoproj-ci", *autoproj_ci_args],
                 logfile="plugins", haltOnFailure=True),
             util.ShellArg(
                 command=[".autoproj/bin/autoproj", "test", "enable"],
@@ -259,10 +269,10 @@ def Build(factory):
     p = util.Interpolate('-p%(prop:parallel_build_level:-1)s')
 
     AutoprojStep(factory, "ci", "build", "--interactive=f", "-k", p,
-        "--cache", CACHE_BUILD_DIR,
+        "--cache", CACHE_BUILD_DIR, "--cache-ignore", util.Interpolate("%(prop:rebuild)s"),
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         name="Building the workspace")
-    AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
+    AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR, "--force", util.Interpolate("%(prop:rebuild)s"),
         name="Pushing to the build cache",
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         alwaysRun=True)
@@ -275,3 +285,75 @@ def BuildReport(factory):
         workersrc="buildbot-report",
         masterdest=util.Interpolate("build_reports/%(prop:buildername)s-%(prop:buildnumber)s"),
         alwaysRun=True))
+
+def StandardSetup(c, name, buildconf_url,
+                  buildconf_default_branch="master",
+                  git_credentials={},
+                  vcstype="git",
+                  autoproj_branch=None,
+                  autobuild_branch=None,
+                  autoproj_ci_branch=None,
+                  seed_config_path=None,
+                  flavor="master",
+                  import_workers=["import-cache"],
+                  build_workers=["build"],
+                  parallel_build_level=4,
+                  autoproj_url=AUTOPROJ_GIT_URL,
+                  autobuild_url=AUTOBUILD_GIT_URL,
+                  autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
+
+    import_cache_factory = util.BuildFactory()
+    if git_credentials:
+        for url in git_credentials:
+            GitCredentials(import_cache_factory, url, git_credentials[url])
+
+    Bootstrap(import_cache_factory, buildconf_url,
+              buildconf_default_branch=buildconf_default_branch,
+              vcstype=vcstype,
+              autoproj_branch=autoproj_branch,
+              autobuild_branch=autobuild_branch,
+              autoproj_ci_branch=autoproj_ci_branch,
+              seed_config_path=seed_config_path,
+              flavor=flavor,
+              autoproj_url=autoproj_url,
+              autobuild_url=autobuild_url,
+              autoproj_ci_url=autoproj_ci_url)
+
+    Update(import_cache_factory, osdeps=False)
+    UpdateImportCache(import_cache_factory)
+
+    c['builders'].append(
+        util.BuilderConfig(name=f"{name}-import-cache",
+            workernames=import_workers,
+            factory=import_cache_factory)
+    )
+
+    build_factory = util.BuildFactory()
+    if git_credentials:
+        for url in git_credentials:
+            GitCredentials(build_factory, url, git_credentials[url])
+
+    Bootstrap(build_factory, buildconf_url,
+              buildconf_default_branch=buildconf_default_branch,
+              vcstype=vcstype,
+              autoproj_branch=autoproj_branch,
+              autobuild_branch=autobuild_branch,
+              autoproj_ci_branch=autoproj_ci_branch,
+              seed_config_path=seed_config_path,
+              flavor=flavor,
+              autoproj_url=autoproj_url,
+              autobuild_url=autobuild_url,
+              autoproj_ci_url=autoproj_ci_url)
+
+    Update(build_factory)
+    Build(build_factory)
+    BuildReport(build_factory)
+
+    c['builders'].append(
+        util.BuilderConfig(name=f"{name}-build",
+        workernames=build_workers,
+        factory=build_factory,
+        properties={ 'parallel_build_level': parallel_build_level })
+    )
+
+    return [import_cache_factory, build_factory]
