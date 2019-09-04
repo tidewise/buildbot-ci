@@ -93,10 +93,16 @@ def package_info_for(buildname):
         packages.append(pkg)
 
     status_order = {
-        'failed': 0,
-        'success': 1,
-        'cached': 2,
-        'skipped': 3
+        'import failed': 0,
+        'build failed': 1,
+        'test failed': 2,
+        'tested': 3,
+        'built': 4,
+        'imported': 5,
+        'cache: tested': 6,
+        'cache: test failed': 6,
+        'cache: built': 7,
+        'unknown': 7
     }
     packages.sort(key=lambda pkg: [status_order[pkg['status'][0]['text']], pkg['name']])
     info['packages'] = packages
@@ -121,14 +127,32 @@ def status_order(status):
     return min(status_order[s['text']] for s in status)
 
 def compute_package_status(pkg):
+    print(json.dumps(pkg))
     if pkg['cached']:
-        return [{'badge': 'SKIPPED', 'text': 'cached'}]
-    elif pkg['failed']:
-        return [{'badge': 'FAILURE', 'text': 'failed'}]
-    elif pkg['built']:
-        return [{'badge': 'SUCCESS', 'text': 'success'}]
+        if 'test' in pkg and pkg['test']['invoked']:
+            if pkg['test']['success']:
+                return [{'badge': 'SUCCESS', 'text': 'cache: tested'}]
+            else:
+                return [{'badge': 'FAILURE', 'text': 'cache: test failed'}]
+        else:
+            return [{'badge': 'SUCCESS', 'text': 'cache: built'}]
+    elif 'test' in pkg and pkg['test']['invoked']:
+        if pkg['test']['success']:
+            return [{'badge': 'SUCCESS', 'text': 'tested'}]
+        else:
+            return [{'badge': 'FAILURE', 'text': 'test failed'}]
+    elif 'build' in pkg and pkg['build']['invoked']:
+        if pkg['build']['success']:
+            return [{'badge': 'SUCCESS', 'text': 'built'}]
+        else:
+            return [{'badge': 'FAILURE', 'text': 'build failed'}]
+    elif 'import' in pkg and pkg['import']['invoked']:
+        if pkg['import']['success']:
+            return [{'badge': 'SUCCESS', 'text': 'imported'}]
+        else:
+            return [{'badge': 'FAILURE', 'text': 'import failed'}]
     else:
-        return [{'badge': 'SKIPPED', 'text': 'skipped'}]
+        return [{'badge': 'SKIPPED', 'text': 'unknown'}]
 
 def compute_package_logs(pkg, basedir):
     logs = {}
