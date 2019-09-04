@@ -260,7 +260,7 @@ ROCK_SELECTED_FLAVOR: {flavor}
                 ".autoproj/bin/autoproj", "plugin", "install", "autoproj-ci", *autoproj_ci_args],
                 logfile="plugins", haltOnFailure=True),
             util.ShellArg(
-                command=[".autoproj/bin/autoproj", "test", "enable"],
+                command=[".autoproj/bin/autoproj", "test", "default", "on"],
                 logfile="enable-tests"),
         ],
         haltOnFailure=True))
