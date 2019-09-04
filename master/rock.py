@@ -272,6 +272,9 @@ def Build(factory):
         "--cache", CACHE_BUILD_DIR, "--cache-ignore", util.Interpolate("%(prop:rebuild)s"),
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         name="Building the workspace")
+    AutoprojStep(factory, "ci", "test", "--interactive=f", "-k", p,
+        "--cache", CACHE_BUILD_DIR, "--cache-ignore", util.Interpolate("%(prop:rebuild)s"),
+        name="Running unit tests")
     AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR, "--force", util.Interpolate("%(prop:rebuild)s"),
         name="Pushing to the build cache",
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
