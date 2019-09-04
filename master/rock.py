@@ -278,8 +278,8 @@ def Build(factory):
         alwaysRun=True)
 
 def BuildReport(factory):
-    AutoprojStep(factory, "ci", "build-report", "--interactive=f", "buildbot-report",
-        name="Generating build report",
+    AutoprojStep(factory, "ci", "create-report", "--interactive=f", "buildbot-report",
+        name="Generating report",
         alwaysRun=True)
     factory.addStep(steps.DirectoryUpload(name="Download the generated report",
         workersrc="buildbot-report",
