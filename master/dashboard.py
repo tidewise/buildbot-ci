@@ -127,32 +127,24 @@ def status_order(status):
     return min(status_order[s['text']] for s in status)
 
 def compute_package_status(pkg):
-    print(json.dumps(pkg))
-    if pkg['cached']:
-        if 'test' in pkg and pkg['test']['invoked']:
-            if pkg['test']['success']:
-                return [{'badge': 'SUCCESS', 'text': 'cache: tested'}]
-            else:
-                return [{'badge': 'FAILURE', 'text': 'cache: test failed'}]
-        else:
-            return [{'badge': 'SUCCESS', 'text': 'cache: built'}]
-    elif 'test' in pkg and pkg['test']['invoked']:
-        if pkg['test']['success']:
-            return [{'badge': 'SUCCESS', 'text': 'tested'}]
-        else:
-            return [{'badge': 'FAILURE', 'text': 'test failed'}]
-    elif 'build' in pkg and pkg['build']['invoked']:
-        if pkg['build']['success']:
-            return [{'badge': 'SUCCESS', 'text': 'built'}]
-        else:
-            return [{'badge': 'FAILURE', 'text': 'build failed'}]
-    elif 'import' in pkg and pkg['import']['invoked']:
-        if pkg['import']['success']:
-            return [{'badge': 'SUCCESS', 'text': 'imported'}]
-        else:
-            return [{'badge': 'FAILURE', 'text': 'import failed'}]
+    phase = compute_package_main_state(pkg)
+    if not phase:
+        return [{'badge': 'SKIPPED', 'text': "unknown"}]
+
+    cached = ""
+    if pkg[phase]['cached']:
+        cached = "cached: "
+
+    if pkg[phase]['success']:
+        status = [{'badge': 'SUCCESS', 'text': f"{cached}{phase}"}]
     else:
-        return [{'badge': 'SKIPPED', 'text': 'unknown'}]
+        status = [{'badge': 'FAILURE', 'text': f"{cached}{phase} failed"}]
+
+    if not 'test' in pkg:
+        status.extend([{'badge': 'WARNINGS', 'text': "no tests"}])
+
+    return status
+
 
 def compute_package_logs(pkg, basedir):
     logs = {}
