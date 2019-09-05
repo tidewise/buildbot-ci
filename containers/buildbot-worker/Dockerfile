@@ -19,6 +19,10 @@ RUN sudo apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     rm -f /tmp/cleanup-qtbindings.sh
 
+RUN apt-get update && \
+    apt-get install -y nodejs npm && \
+    npm install -g xunit-viewer && \
+    rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /var/cache/autoproj/import && \
     mkdir -p /var/cache/autoproj/build && \
@@ -29,3 +33,4 @@ COPY buildbot.tac /buildbot/buildbot.tac
 USER buildbot
 
 COPY --chown=buildbot files/home/.bundle/config /home/buildbot/.bundle/config
+
