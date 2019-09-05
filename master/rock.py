@@ -7,7 +7,10 @@ AUTOPROJ_CI_GIT_URL = "https://github.com/rock-core/autoproj-ci"
 
 CACHE_IMPORT_DIR = "/var/cache/autoproj/import"
 cache_import_lock = util.MasterLock("cache-import")
-CACHE_BUILD_DIR = util.Interpolate('/var/cache/autoproj/build/%(prop:buildername)s')
+
+CACHE_BUILD_BASE_DIR = '/var/cache/autoproj/build'
+CACHE_BUILD_DIR = util.Interpolate(f"{CACHE_BUILD_BASE_DIR}/%(prop:buildername)s")
+
 class BaseWorker(worker.KubeLatentWorker):
     @defer.inlineCallbacks
     def getPodSpec(self, build):
@@ -142,10 +145,10 @@ def Update(factory, osdeps=True):
 def CleanBuildCache(factory):
     factory.addStep(steps.ShellCommand(
         name="Clean the build cache",
-        command=["rm", "-rf", CACHE_BUILD_DIR]))
+        command=["sh", "-c", util.Interpolate(f"rm -rf \"{CACHE_BUILD_BASE_DIR}/%(prop:target_buildername)s\"/*")]))
     factory.addStep(steps.ShellCommand(
         name="Check result",
-        command=["find", CACHE_BUILD_DIR]))
+        command=["find", util.Interpolate(f"{CACHE_BUILD_BASE_DIR}/%(prop:target_buildername)s")]))
 
 def UpdateImportCache(factory):
     factory.addStep(steps.ShellCommand(
