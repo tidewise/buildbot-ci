@@ -13,6 +13,7 @@ def Create(name):
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.add_url_rule("/index.html", "index", lambda: dashboard(app))
     app.add_url_rule("/logs/<buildname>/<path:packagename>/<logtype>", "log_get", log_get)
+    app.add_url_rule("/test-results/<buildname>/<path:packagename>", "test_results_get", test_results_get)
     return app
 
 
@@ -31,24 +32,31 @@ def dashboard(app):
     builds = compute_build_info(builds, builders)
     return render_template('dashboard.html', builds=builds)
 
-def log_get(buildname, packagename, logtype):
-    try:
-        build_reports = Path("build_reports").resolve(strict=True)
-        path = build_reports / buildname / 'logs' / f"{packagename}-{logtype}.log"
-        path = path.resolve(strict=True)
-        # Make sure our arguments are not trying to get us out of build_reports/
-        # This raises if `path` does not start with `build_reports`
-        path.relative_to(build_reports)
+def test_results_get(buildname, packagename):
+    build_reports = Path("build_reports").resolve(strict=True)
+    path = build_reports / buildname / 'logs' / 'test-results' / f"{packagename}.html"
+    path = path.resolve(strict=True)
+    # Make sure our arguments are not trying to get us out of build_reports/
+    # This raises if `path` does not start with `build_reports`
+    path.relative_to(build_reports)
 
-        log_contents = path.read_text()
-        return render_template('log.html',
-            buildname=buildname, packagename=packagename,
-            logtype=logtype, log_contents=log_contents)
-    except Exception as error:
-        return render_template('log.html',
-            error=error,
-            buildname=buildname, packagename=packagename,
-            logtype=logtype, log_contents=log_contents)
+    contents = path.read_text();
+    return contents
+    #contents = path.read_text();
+    #return render_template('tests.html', contents=contents)
+
+def log_get(buildname, packagename, logtype):
+    build_reports = Path("build_reports").resolve(strict=True)
+    path = build_reports / buildname / 'logs' / f"{packagename}-{logtype}.log"
+    path = path.resolve(strict=True)
+    # Make sure our arguments are not trying to get us out of build_reports/
+    # This raises if `path` does not start with `build_reports`
+    path.relative_to(build_reports)
+
+    log_contents = path.read_text()
+    return render_template('log.html',
+        buildname=buildname, packagename=packagename,
+        logtype=logtype, log_contents=log_contents)
 
 
 
@@ -90,6 +98,7 @@ def package_info_for(buildname):
         pkg['name'] = pkg_name
         pkg['status'] = compute_package_status(pkg)
         pkg['logs'] = compute_package_logs(pkg, basedir)
+        pkg['tests'] = compute_package_tests(pkg, basedir)
         packages.append(pkg)
 
     status_order = {
@@ -159,3 +168,13 @@ def compute_package_logs(pkg, basedir):
             logs[log_type] = path
 
     return logs
+
+def compute_package_tests(pkg, basedir):
+    logs = {}
+    pkg_elements = pkg['name'].split('/')
+    basename = pkg_elements.pop()
+    xunit_html = basedir.joinpath('logs', 'test-results', *pkg_elements, f"{basename}.html")
+    if xunit_html.is_file():
+        return [{ 'path': xunit_html, 'type': 'xunit' }]
+
+    return []

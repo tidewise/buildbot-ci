@@ -277,6 +277,9 @@ def Build(factory):
         name="Building the workspace")
     AutoprojStep(factory, "ci", "test", "--interactive=f", "-k", p,
         name="Running unit tests")
+    AutoprojStep(factory, "ci", "process-test-results", "--interactive=f",
+        "--xunit-viewer=/usr/local/bin/xunit-viewer",
+        name="Postprocess test results")
     AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR, "--force", util.Interpolate("%(prop:rebuild)s"),
         name="Pushing to the build cache",
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},

@@ -20,9 +20,18 @@
                     {% for package in build['report']['packages'] %}
                     <li class="list-group-item">
                         <span class="pull-right">
+                            <em>Logs: </em>
                             {% for log in package['logs'] %}
                             <a href="{{ url_for('log_get', buildname=build['name'], packagename=package['name'], logtype=log) }}">{{ log }}</a>
                             {% endfor %}
+
+                            {% if package['tests'] %}
+                            <em>Tests: </em>
+                            {% for result in package['tests'] %}
+                            <a href="{{ url_for('test_results_get', buildname=build['name'], packagename=package['name'], type="{{ result['type'] }}") }}">{{ result['type'] }}</a>
+                            {% endfor %}
+                            {% endif %}
+
                             {% for status in package['status'] %}
                             <span class="badge-status results_{{ status['badge'] }}">
                                 {{ status['text'] }}
