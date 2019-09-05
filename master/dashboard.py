@@ -7,6 +7,19 @@ from pathlib import Path
 
 from buildbot.process.results import statusToString
 
+STATUS_ORDER = {
+    'import failed': 0,
+    'build failed': 1,
+    'test failed': 2,
+    'test': 3,
+    'build': 4,
+    'import': 5,
+    'cached: test': 6,
+    'cached: test failed': 6,
+    'cached: build': 7,
+    'unknown': 7
+}
+
 def Create(name):
     app = Flask(name, root_path=os.path.dirname(__file__))
     # this allows to work on the template without having to restart Buildbot
@@ -30,7 +43,8 @@ def dashboard(app):
             ("builds", build['buildid'], "properties"))
 
     builds = compute_build_info(builds, builders)
-    return render_template('dashboard.html', builds=builds)
+    toplevel_builds = compute_toplevel_builds(builds)
+    return render_template('dashboard.html', builds=builds, toplevel_builds=toplevel_builds)
 
 def test_results_get(buildname, packagename):
     build_reports = Path("build_reports").resolve(strict=True)
@@ -58,9 +72,6 @@ def log_get(buildname, packagename, logtype):
         buildname=buildname, packagename=packagename,
         logtype=logtype, log_contents=log_contents)
 
-
-
-
 def compute_build_info(builds, builders):
     info = []
     for build in builds:
@@ -79,7 +90,27 @@ def compute_build_info(builds, builders):
                         'summary': summary,
                         'report': report
                     }
+                    build_info['state'] = compute_build_state(build_info)
                     info.append(build_info)
+
+    return info
+
+def compute_build_state(summary):
+    package_info = summary['report']['packages']
+    if package_info:
+        # report's packages are sorted by order of badge priority
+        return package_info[0]['status'][0]['badge']
+    else:
+        return 'SUCCESS';
+
+def compute_toplevel_builds(build_info):
+    info = {}
+    for build in build_info:
+        builder_name = build['builder_name']
+        if builder_name in info:
+            info[builder_name].append(build)
+        else:
+            info[builder_name] = [build]
 
     return info
 
@@ -101,19 +132,7 @@ def package_info_for(buildname):
         pkg['tests'] = compute_package_tests(pkg, basedir)
         packages.append(pkg)
 
-    status_order = {
-        'import failed': 0,
-        'build failed': 1,
-        'test failed': 2,
-        'tested': 3,
-        'built': 4,
-        'imported': 5,
-        'cache: tested': 6,
-        'cache: test failed': 6,
-        'cache: built': 7,
-        'unknown': 7
-    }
-    packages.sort(key=lambda pkg: [status_order[pkg['status'][0]['text']], pkg['name']])
+    packages.sort(key=lambda pkg: [STATUS_ORDER[pkg['status'][0]['text']], pkg['name']])
     info['packages'] = packages
     return info
 
@@ -133,7 +152,12 @@ def build_summary(report):
     return results.values()
 
 def status_order(status):
-    return min(status_order[s['text']] for s in status)
+    return min(STATUS_ORDER[s['text']] for s in status)
+
+def compute_package_main_state(pkg):
+    for phase in ['test', 'build', 'import']:
+        if phase in pkg and pkg[phase]['invoked']:
+            return phase
 
 def compute_package_status(pkg):
     phase = compute_package_main_state(pkg)

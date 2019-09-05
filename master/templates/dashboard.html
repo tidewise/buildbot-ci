@@ -1,9 +1,72 @@
+<style type="text/css">
+    .toplevel-buttons {
+        margin-bottom: 2em;
+    }
+
+    .button {
+        background-color: #ccc;
+        border-radius: .5em;
+        padding: .5em;
+        margin: .5em;
+    }
+
+    .build-details .list-group {
+        display: none;
+    }
+</style>
+
+<script type="text/javascript">
+    function hideAll() {
+        document.querySelectorAll(".build-details .list-group").forEach((el) => {
+            el.style.display = "none";
+        })
+    }
+    function showAll() {
+        document.querySelectorAll(".build-details .list-group").forEach((el) => {
+            el.style.display = "block";
+        })
+    }
+
+    function gotoBuild(build_id) {
+        let panel_list = document.querySelector("#build-" + build_id + " .list-group")
+        panel_list.style.display = 'block';
+        document.querySelector("#build-" + build_id).scrollIntoView();
+    }
+
+    function togglePanel(build_id) {
+        let panel_list = document.querySelector("#build-" + build_id + " .list-group")
+        panel_list.style.display = panel_list.style.display == "none" ? "block" : "none";
+    }
+</script>
+
 <div class="content">
     <div class="container">
         <div class="row">
-            {% for build in builds %}
             <div class="panel panel-default">
-                <div class="panel-heading">
+            <ul class="builder_summary list-group">
+            {% for builder_name in toplevel_builds %}
+            <li class="list-group-item">
+                <span class="builder-name">{{ builder_name }}</span>:
+
+                {% for build in toplevel_builds[builder_name] %}
+                <span class="badge-status results_{{ build['state'] }}" onclick="gotoBuild({{ build['id'] }})">
+                    {{ build['build_number'] }}
+                </span>
+                {% endfor %}
+            </li>
+            {% endfor %}
+            </ul>
+            </div>
+
+            <div class="toplevel-buttons">
+            <span class="button" onclick="showAll()">Show all</span> <span class="button" onclick="hideAll()">Hide all</span>
+            </div>
+        </div>
+        <div class="row">
+            {% for build in builds %}
+            <div class="build-details panel panel-default" id="build-{{ build['id'] }}">
+                <div class="panel-heading"
+                     onclick="togglePanel({{ build['id'] }})">
                     <a href="/#/builders/{{ build['builder_id'] }}/builds/{{ build['build_number'] }}">
                         {{ build['builder_name'] }}/{{ build['build_number'] }}
                     </a>
