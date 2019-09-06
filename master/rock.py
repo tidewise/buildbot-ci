@@ -111,13 +111,26 @@ class BuildWorker(BaseWorker):
         return pod_def
 
 
-def AutoprojStep(factory, *args, name=None, **kwargs):
+def Barrier(factory, name):
+    factory.addStep(
+        steps.SetProperty(property=f"{name}BarrierReached", value=True, hideStepIf=True)
+    )
+
+def hasReachedBarrier(name):
+    return lambda step: step.getProperty(f"{name}BarrierReached", default=False)
+
+def AutoprojStep(factory, *args, name=None, ifReached=None, **kwargs):
     if name is None:
         name = f"autoproj {args[0]}"
 
+    barrierArgs = {}
+    if ifReached:
+        barrierArgs = { "alwaysRun": True,
+                        "doStepIf": hasReachedBarrier(ifReached) }
+
     factory.addStep(steps.ShellCommand(name=name,
         command=[".autoproj/bin/autoproj", *args],
-        haltOnFailure=True, **kwargs))
+        haltOnFailure=True, **barrierArgs, **kwargs))
 
 def Update(factory, osdeps=True):
     osdeps_update = []
@@ -129,6 +142,7 @@ def Update(factory, osdeps=True):
     else:
         arguments.append("--no-osdeps")
 
+    Barrier(factory, "update")
     factory.addStep(steps.ShellSequence(
         name="Update",
         commands=[*osdeps_update,
@@ -271,28 +285,34 @@ ROCK_SELECTED_FLAVOR: {flavor}
 def Build(factory):
     p = util.Interpolate('-p%(prop:parallel_build_level:-1)s')
 
+    Barrier(factory, "build")
     AutoprojStep(factory, "ci", "build", "--interactive=f", "-k", p,
         "--cache", CACHE_BUILD_DIR, "--cache-ignore", util.Interpolate("%(prop:rebuild)s"),
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         name="Building the workspace")
+
+    Barrier(factory, "test")
     AutoprojStep(factory, "ci", "test", "--interactive=f", "-k", p,
         name="Running unit tests")
+
     AutoprojStep(factory, "ci", "process-test-results", "--interactive=f",
         "--xunit-viewer=/usr/local/bin/xunit-viewer",
-        name="Postprocess test results")
-    AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR, "--force", util.Interpolate("%(prop:rebuild)s"),
+        name="Postprocess test results",
+        ifReached="test")
+    AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
         name="Pushing to the build cache",
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
-        alwaysRun=True)
+        ifReached="build")
 
 def BuildReport(factory):
     AutoprojStep(factory, "ci", "create-report", "--interactive=f", "buildbot-report",
         name="Generating report",
-        alwaysRun=True)
+        ifReached="update")
     factory.addStep(steps.DirectoryUpload(name="Download the generated report",
         workersrc="buildbot-report",
         masterdest=util.Interpolate("build_reports/%(prop:buildername)s-%(prop:buildnumber)s"),
-        alwaysRun=True))
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("update")))
 
 def StandardSetup(c, name, buildconf_url,
                   buildconf_default_branch="master",
