@@ -1,6 +1,73 @@
-# Setting up a Buildbot-based Kubernetes cluster on GKE
+# Using Buildbot as a CI service for a Rock-based system
 
-## Step 1: Building and pushing the containers
+***Disclaimer*** This is not for the faint of heart. This repository automates a
+*lot* of things, but ultimately you still need to know your way around
+*Buildbot, Google Cloud, Kubernetes, terraform and `$(buzzword of the day)`
+
+This repository mainly contains two things:
+- a [buildbot](https://buildbot.net) configuration that uses Autoproj and the
+  [autoproj-ci](https://github.com/rock-core/autoproj-ci) plugin to build Rock
+  workspaces in a container.
+- what's needed to setup such a build slave environment on Google Cloud (more
+  specifically, Google Kubernetes Engine)
+
+## Functionality
+
+Builds are managed normally through the BuildBot interface. The autoproj-specific
+status page is displayed as a separate Autoproj dashboard that appears on BuildBot's
+left pane. Builds appear there only when the build is completely finished.
+
+You may need to refresh your browser window to see new builds appear.
+
+### Bootstrap/build/test cycle
+
+The buildbot integration does a full bootstrap/update/build/test cycle. This is so
+that a build does not influence another. Builds are done with Autoproj's separate
+prefixes turned on, so dependencies are more strict that what you are used to if
+you use Autoproj's default config.
+
+### Per-package status reporting, logs and test results
+
+After a build, one can inspect the result of the build on a per-package basis.
+By default, the page shows all available builds, their status but no packages.
+
+![Build Overview](doc/overview.png)
+
+To see the packages of a given build, click either on a particular build
+badge at toplevel, or on a build's header
+
+![Open Close Details](doc/open_close_package_details.apng)
+
+![Per-package view](doc/per_package_view.png)
+
+Each package line displays the list of available logs and allows you to
+display them. Moreover, if the package's test suite generated
+JUnit-compatible XML results, they are made available as HTML (see
+the `xunit` link for base/types in the image above)
+
+### Import cache
+
+The build steps assume that there is an import cache mounted in
+`/var/cache/autoproj/import` in the slave container. One may create an import
+cache update builder to update the cache.
+
+### Build cache
+
+Successfully built packages are cached so as to reduce the build cycle (dramatically)
+when only "leaf" packages are modified. This requires a read/write folder mounted
+in `/var/cache/autoproj/build` in the slave container, which is provided by
+the GKE integration through NFS.
+
+## Setting up a Buildbot-based Kubernetes cluster on GKE
+
+The template configuration *assumes* that you are using the GKE cluster, but
+it would be relatively easy to modify it to run on a different
+container-based infrastructure (even "plain docker"), as long as your target
+is supported by Buildbot. The `buildbot-worker` container built using this
+method. See `master/master.cfg` for a template documentation that builds
+`rock.core`.
+
+### Step 1: Building and pushing the containers
 
 The containers used by the cluster can be built using the `containers.sh` script. Run
 
@@ -16,7 +83,7 @@ it, build it manually first with
 docker build -t rockcore/buildbot-worker-base containers/buildbot-worker-base
 ~~~
 
-## Step 2: Setting up the infrastructure
+### Step 2: Setting up the infrastructure
 
 The infrastructure will be set up using [Terraform](terraform.io). You need to
 download the tool first.
@@ -50,7 +117,7 @@ terraform apply
 After running terraform, you should have a Kubernetes cluster ready to use to
 build Rock workspaces.
 
-## Run buildbot to connect locally to your cluster
+### Run buildbot to connect locally to your cluster
 
 You will need first to forward a public-accessible port to
 `localhost:9989` for the workers to connect to. I use [ngrok](https://ngrok.com/)
@@ -76,7 +143,7 @@ I suggest triggering the `autoproj cache` build to see if everything is fine.
 At this point, we recommend to copy the `master/` folder to your own repository
 and tune it to your needs.
 
-## Using app.terraform.io for state management
+### Using app.terraform.io for state management
 
 Just rename `remote.tf.example` into `remote.tf` and update the empty variables.
 You will also need to register your Terraform API token in `~/.terraformrc` by
