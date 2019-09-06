@@ -14,10 +14,10 @@ STATUS_ORDER = {
     'test': 3,
     'build': 4,
     'import': 5,
-    'cached: test': 6,
     'cached: test failed': 6,
-    'cached: build': 7,
-    'unknown': 7
+    'cached: test': 7,
+    'cached: build': 8,
+    'unknown': 9
 }
 
 def Create(name):
