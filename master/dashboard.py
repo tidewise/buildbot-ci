@@ -98,10 +98,10 @@ def compute_build_info(builds, builders):
 def compute_build_state(summary):
     package_info = summary['report']['packages']
     if package_info:
-        # report's packages are sorted by order of badge priority
-        return package_info[0]['status'][0]['badge']
+        # report's packages are sorted by order of status priority
+        return package_info[0]['status'][0]
     else:
-        return 'SUCCESS';
+        return { 'text': 'success', 'badge': 'SUCCESS' }
 
 def compute_toplevel_builds(build_info):
     info = {}

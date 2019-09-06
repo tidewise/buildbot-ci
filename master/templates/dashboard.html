@@ -49,8 +49,12 @@
                 <span class="builder-name">{{ builder_name }}</span>:
 
                 {% for build in toplevel_builds[builder_name] %}
-                <span class="badge-status results_{{ build['state'] }}" onclick="gotoBuild({{ build['id'] }})">
-                    {{ build['build_number'] }}
+                <span class="badge-status results_{{ build['state']['badge'] }}" onclick="gotoBuild({{ build['id'] }})">
+                    {% if build['state']['badge'] == 'success' %}
+                        {{ build['build_number'] }}
+                    {% else %}
+                        {{ build['build_number'] }}: {{ build['state']['text'] }}
+                    {% endif %}
                 </span>
                 {% endfor %}
             </li>
