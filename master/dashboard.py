@@ -7,12 +7,26 @@ from pathlib import Path
 
 from buildbot.process.results import statusToString
 
+STATUS_ORDER = {
+    'import failed': 0,
+    'build failed': 1,
+    'test failed': 2,
+    'test': 3,
+    'build': 4,
+    'import': 5,
+    'cached: test failed': 6,
+    'cached: test': 7,
+    'cached: build': 8,
+    'unknown': 9
+}
+
 def Create(name):
     app = Flask(name, root_path=os.path.dirname(__file__))
     # this allows to work on the template without having to restart Buildbot
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.add_url_rule("/index.html", "index", lambda: dashboard(app))
     app.add_url_rule("/logs/<buildname>/<path:packagename>/<logtype>", "log_get", log_get)
+    app.add_url_rule("/test-results/<buildname>/<path:packagename>", "test_results_get", test_results_get)
     return app
 
 
@@ -29,29 +43,34 @@ def dashboard(app):
             ("builds", build['buildid'], "properties"))
 
     builds = compute_build_info(builds, builders)
-    return render_template('dashboard.html', builds=builds)
+    toplevel_builds = compute_toplevel_builds(builds)
+    return render_template('dashboard.html', builds=builds, toplevel_builds=toplevel_builds)
+
+def test_results_get(buildname, packagename):
+    build_reports = Path("build_reports").resolve(strict=True)
+    path = build_reports / buildname / 'logs' / 'test-results' / f"{packagename}.html"
+    path = path.resolve(strict=True)
+    # Make sure our arguments are not trying to get us out of build_reports/
+    # This raises if `path` does not start with `build_reports`
+    path.relative_to(build_reports)
+
+    contents = path.read_text();
+    return contents
+    #contents = path.read_text();
+    #return render_template('tests.html', contents=contents)
 
 def log_get(buildname, packagename, logtype):
-    try:
-        build_reports = Path("build_reports").resolve(strict=True)
-        path = build_reports / buildname / 'logs' / f"{packagename}-{logtype}.log"
-        path = path.resolve(strict=True)
-        # Make sure our arguments are not trying to get us out of build_reports/
-        # This raises if `path` does not start with `build_reports`
-        path.relative_to(build_reports)
+    build_reports = Path("build_reports").resolve(strict=True)
+    path = build_reports / buildname / 'logs' / f"{packagename}-{logtype}.log"
+    path = path.resolve(strict=True)
+    # Make sure our arguments are not trying to get us out of build_reports/
+    # This raises if `path` does not start with `build_reports`
+    path.relative_to(build_reports)
 
-        log_contents = path.read_text()
-        return render_template('log.html',
-            buildname=buildname, packagename=packagename,
-            logtype=logtype, log_contents=log_contents)
-    except Exception as error:
-        return render_template('log.html',
-            error=error,
-            buildname=buildname, packagename=packagename,
-            logtype=logtype, log_contents=log_contents)
-
-
-
+    log_contents = path.read_text()
+    return render_template('log.html',
+        buildname=buildname, packagename=packagename,
+        logtype=logtype, log_contents=log_contents)
 
 def compute_build_info(builds, builders):
     info = []
@@ -66,11 +85,32 @@ def compute_build_info(builds, builders):
                         'id': build['buildid'],
                         'name': name,
                         'builder_id': build['builderid'],
+                        'build_number': build['number'],
                         'builder_name': builder['name'],
                         'summary': summary,
                         'report': report
                     }
+                    build_info['state'] = compute_build_state(build_info)
                     info.append(build_info)
+
+    return info
+
+def compute_build_state(summary):
+    package_info = summary['report']['packages']
+    if package_info:
+        # report's packages are sorted by order of status priority
+        return package_info[0]['status'][0]
+    else:
+        return { 'text': 'success', 'badge': 'SUCCESS' }
+
+def compute_toplevel_builds(build_info):
+    info = {}
+    for build in build_info:
+        builder_name = build['builder_name']
+        if builder_name in info:
+            info[builder_name].append(build)
+        else:
+            info[builder_name] = [build]
 
     return info
 
@@ -89,15 +129,10 @@ def package_info_for(buildname):
         pkg['name'] = pkg_name
         pkg['status'] = compute_package_status(pkg)
         pkg['logs'] = compute_package_logs(pkg, basedir)
+        pkg['tests'] = compute_package_tests(pkg, basedir)
         packages.append(pkg)
 
-    status_order = {
-        'failed': 0,
-        'success': 1,
-        'cached': 2,
-        'skipped': 3
-    }
-    packages.sort(key=lambda pkg: [status_order[pkg['status'][0]['text']], pkg['name']])
+    packages.sort(key=lambda pkg: [STATUS_ORDER[pkg['status'][0]['text']], pkg['name']])
     info['packages'] = packages
     return info
 
@@ -117,17 +152,32 @@ def build_summary(report):
     return results.values()
 
 def status_order(status):
-    return min(status_order[s['text']] for s in status)
+    return min(STATUS_ORDER[s['text']] for s in status)
+
+def compute_package_main_state(pkg):
+    for phase in ['test', 'build', 'import']:
+        if phase in pkg and pkg[phase]['invoked']:
+            return phase
 
 def compute_package_status(pkg):
-    if pkg['cached']:
-        return [{'badge': 'SKIPPED', 'text': 'cached'}]
-    elif pkg['failed']:
-        return [{'badge': 'FAILURE', 'text': 'failed'}]
-    elif pkg['built']:
-        return [{'badge': 'SUCCESS', 'text': 'success'}]
+    phase = compute_package_main_state(pkg)
+    if not phase:
+        return [{'badge': 'SKIPPED', 'text': "unknown"}]
+
+    cached = ""
+    if pkg[phase]['cached']:
+        cached = "cached: "
+
+    if pkg[phase]['success']:
+        status = [{'badge': 'SUCCESS', 'text': f"{cached}{phase}"}]
     else:
-        return [{'badge': 'SKIPPED', 'text': 'skipped'}]
+        status = [{'badge': 'FAILURE', 'text': f"{cached}{phase} failed"}]
+
+    if not 'test' in pkg:
+        status.extend([{'badge': 'WARNINGS', 'text': "no tests"}])
+
+    return status
+
 
 def compute_package_logs(pkg, basedir):
     logs = {}
@@ -142,3 +192,13 @@ def compute_package_logs(pkg, basedir):
             logs[log_type] = path
 
     return logs
+
+def compute_package_tests(pkg, basedir):
+    logs = {}
+    pkg_elements = pkg['name'].split('/')
+    basename = pkg_elements.pop()
+    xunit_html = basedir.joinpath('logs', 'test-results', *pkg_elements, f"{basename}.html")
+    if xunit_html.is_file():
+        return [{ 'path': xunit_html, 'type': 'xunit' }]
+
+    return []
