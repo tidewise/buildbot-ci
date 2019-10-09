@@ -184,6 +184,9 @@ def compute_package_logs(pkg, basedir):
     pkg_elements = pkg['name'].split('/')
     basename = pkg_elements.pop()
     logdir = basedir.joinpath('logs', *pkg_elements)
+    if not logdir.exists():
+        return logs
+
     slice_start = len(basename) + 1
     for path in logdir.iterdir():
         if path.is_file() and path.match(f"{basename}-*.log"):
