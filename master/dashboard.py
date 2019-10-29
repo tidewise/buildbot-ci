@@ -77,7 +77,12 @@ def compute_build_info(builds, builders):
     for build in builds:
         for builder in builders:
             if build['builderid'] == builder['builderid']:
-                name = f"{builder['name']}-{build['number']}"
+                buildername = builder.get(
+                    'virtual_builder_name',
+                    builder.get('name')
+                )
+                name = f"{buildername}-{build['number']}"
+
                 report = package_info_for(name)
                 if not report is None:
                     summary = build_summary(report)
@@ -86,7 +91,7 @@ def compute_build_info(builds, builders):
                         'name': name,
                         'builder_id': build['builderid'],
                         'build_number': build['number'],
-                        'builder_name': builder['name'],
+                        'builder_name': buildername,
                         'summary': summary,
                         'report': report
                     }

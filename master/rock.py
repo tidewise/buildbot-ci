@@ -317,11 +317,32 @@ def BuildReport(factory):
     AutoprojStep(factory, "ci", "create-report", "--interactive=f", "buildbot-report",
         name="Generating report",
         ifReached="update")
-    factory.addStep(steps.DirectoryUpload(name="Download the generated report",
-        workersrc="buildbot-report",
-        masterdest=util.Interpolate("build_reports/%(prop:buildername)s-%(prop:buildnumber)s"),
+
+    report_basename="build_reports/%(prop:virtual_builder_name:-%(prop:buildername)s)s-%(prop:buildnumber)s"
+    factory.addStep(steps.ShellCommand(name="Compress the report directory",
+        command=["tar", "cjf", "build_report.tar.bz2", "buildbot-report"],
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("update")
+    ))
+    factory.addStep(steps.FileUpload(name="Download the report",
+        workersrc="build_report.tar.bz2",
+        masterdest=util.Interpolate(f"{report_basename}.tar.bz2"),
         alwaysRun=True,
         doStepIf=hasReachedBarrier("update")))
+    factory.addStep(steps.MasterShellCommand(name="Create the report directory",
+        command=["mkdir", "-p",
+                 util.Interpolate(f"{report_basename}")],
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("update")
+    ))
+    factory.addStep(steps.MasterShellCommand(name="Extract the report on the master",
+        command=["tar", "xjf",
+                 util.Interpolate(f"{report_basename}.tar.bz2"),
+                 "-C", util.Interpolate(f"{report_basename}"),
+                 "--strip-components=1"],
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("update")
+    ))
 
 def StandardSetup(c, name, buildconf_url,
                   buildconf_default_branch="master",
