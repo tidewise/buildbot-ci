@@ -292,6 +292,15 @@ def Build(factory):
         name="Building the workspace")
 
     Barrier(factory, "test")
+    factory.addStep(steps.FileDownload(name="copy omniNames startup script",
+        workerdest="/buildbot/start-omniNames",
+        mastersrc="start-omniNames",
+        mode=0o755,
+        haltOnFailure=True))
+    factory.addStep(steps.ShellCommand(name="start omniNames for tests",
+        command=["/buildbot/start-omniNames"],
+        haltOnFailure=True,
+        usePTY=True))
     AutoprojStep(factory, "ci", "test", "--interactive=f", "-k", p,
         name="Running unit tests")
 
