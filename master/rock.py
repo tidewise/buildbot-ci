@@ -152,7 +152,6 @@ def Update(factory, osdeps=True):
                 logfile="autoproj-update"
             )
         ],
-        env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         locks=[cache_import_lock.access('counting')],
         haltOnFailure=True))
 
@@ -229,6 +228,7 @@ def Bootstrap(factory, buildconf_url,
 
     seed_config += f"""
 import_log_enabled: false
+importer_cache_dir: "{CACHE_IMPORT_DIR}"
 separate_prefixes: true
 ROCK_SELECTED_FLAVOR: {flavor}
     """
@@ -288,7 +288,6 @@ def Build(factory):
     Barrier(factory, "build")
     AutoprojStep(factory, "ci", "build", "--interactive=f", "-k", p,
         "--cache", CACHE_BUILD_DIR, "--cache-ignore", util.Interpolate("%(prop:rebuild)s"),
-        env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         name="Building the workspace")
 
     Barrier(factory, "test")
@@ -310,7 +309,6 @@ def Build(factory):
         ifReached="test")
     AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
         name="Pushing to the build cache",
-        env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         ifReached="build")
 
 class ReportPathRender:
