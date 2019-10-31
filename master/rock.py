@@ -29,6 +29,12 @@ class ImportCacheWorker(BaseWorker):
 
         container = spec['containers'][0]
         container['imagePullPolicy'] = 'Always'
+        container['resources'] = {
+            'requests': {
+                'cpu': 1,
+                'memory': f"1G"
+            }
+        }
         container['volumeMounts'] = [
             {
                 'name': 'cache-autoproj-import',
@@ -36,6 +42,10 @@ class ImportCacheWorker(BaseWorker):
                 'readOnly': False
             }
         ]
+        spec['tolerations'] = [{
+            'key': 'build-role',
+            'operator': 'Exists'
+        }]
         spec['volumes'] = [
             {
                 'name': 'cache-autoproj-import',
@@ -165,11 +175,19 @@ def CleanBuildCache(factory):
 
 def UpdateImportCache(factory):
     factory.addStep(steps.ShellCommand(
+        name="Install gem-compiler to cache the precompiled gems",
+        command=[".autoproj/bin/autoproj", "plugin", "install", "gem-compiler"],
+        haltOnFailure=True
+    ))
+    factory.addStep(steps.ShellCommand(
         name="Update the workspace's import cache",
         command=[".autoproj/bin/autoproj", "cache",
-            CACHE_IMPORT_DIR, "--interactive=f", "-k"],
+            CACHE_IMPORT_DIR, "--interactive=f", "-k",
+            "--gems",
+            "--gems-compile", "qtbindings", "rice", "ffi", "debase", "nokogiri"],
         locks=[cache_import_lock.access('exclusive')],
-        haltOnFailure=True))
+        haltOnFailure=True
+    ))
 
 def GitCredentials(factory, url, credentials):
     """Register credentials to be used by git to access a given url
@@ -390,7 +408,7 @@ def StandardSetup(c, name, buildconf_url,
               autobuild_url=autobuild_url,
               autoproj_ci_url=autoproj_ci_url)
 
-    Update(import_cache_factory, osdeps=False)
+    Update(import_cache_factory)
     UpdateImportCache(import_cache_factory)
 
     c['builders'].append(
