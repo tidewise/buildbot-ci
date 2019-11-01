@@ -189,6 +189,7 @@ def UpdateImportCache(factory):
             ".autoproj/bin/autoproj", "cache",
             CACHE_IMPORT_DIR, "--interactive=f", "-k",
             "--gems",
+            util.Interpolate("--gems-compile-force=%(prop:gems_compile_force:#?|t|f)s"),
             "--gems-compile", "qtbindings", "rice+ruby/lib", "ffi", "debase", "nokogiri"
         ],
         locks=[cache_import_lock.access('exclusive')],
