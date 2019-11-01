@@ -185,10 +185,12 @@ def UpdateImportCache(factory):
     ))
     factory.addStep(steps.ShellCommand(
         name="Update the workspace's import cache",
-        command=[".autoproj/bin/autoproj", "cache",
+        command=[
+            ".autoproj/bin/autoproj", "cache",
             CACHE_IMPORT_DIR, "--interactive=f", "-k",
             "--gems",
-            "--gems-compile", "qtbindings", "rice", "ffi", "debase", "nokogiri"],
+            "--gems-compile", "qtbindings", "rice+ruby/lib", "ffi", "debase", "nokogiri"
+        ],
         locks=[cache_import_lock.access('exclusive')],
         haltOnFailure=True
     ))
