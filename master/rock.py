@@ -176,7 +176,11 @@ def CleanBuildCache(factory):
 def UpdateImportCache(factory):
     factory.addStep(steps.ShellCommand(
         name="Install gem-compiler to cache the precompiled gems",
-        command=[".autoproj/bin/autoproj", "plugin", "install", "gem-compiler"],
+        command=[
+            ".autoproj/bin/autoproj", "plugin", "install", "gem-compiler",
+            "--git", "https://github.com/tidewise/gem-compiler",
+            "--branch", "add_artifact_argument"
+        ],
         haltOnFailure=True
     ))
     factory.addStep(steps.ShellCommand(
