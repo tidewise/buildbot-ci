@@ -313,12 +313,29 @@ def Build(factory):
         env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         ifReached="build")
 
+class ReportPathRender:
+    def __init__(self, prefix, suffix):
+        self.prefix = prefix
+        self.suffix = suffix
+
+    def getRenderingFor(self, props):
+        name = props.getProperty(
+            'virtual_builder_name',
+            props.getProperty('buildername')
+        )
+        name = name.replace('/', ':')
+        number = props.getProperty('buildnumber')
+
+        return f"{self.prefix}{name}-{number}{self.suffix}"
+
 def BuildReport(factory):
     AutoprojStep(factory, "ci", "create-report", "--interactive=f", "buildbot-report",
         name="Generating report",
         ifReached="update")
 
-    report_basename="build_reports/%(prop:virtual_builder_name:-%(prop:buildername)s)s-%(prop:buildnumber)s"
+    report_folder = ReportPathRender("build_reports/", "")
+    report_tar    = ReportPathRender("build_reports/", ".tar.bz2")
+
     factory.addStep(steps.ShellCommand(name="Compress the report directory",
         command=["tar", "cjf", "build_report.tar.bz2", "buildbot-report"],
         alwaysRun=True,
@@ -326,19 +343,17 @@ def BuildReport(factory):
     ))
     factory.addStep(steps.FileUpload(name="Download the report",
         workersrc="build_report.tar.bz2",
-        masterdest=util.Interpolate(f"{report_basename}.tar.bz2"),
+        masterdest=report_tar,
         alwaysRun=True,
         doStepIf=hasReachedBarrier("update")))
     factory.addStep(steps.MasterShellCommand(name="Create the report directory",
-        command=["mkdir", "-p",
-                 util.Interpolate(f"{report_basename}")],
+        command=["mkdir", "-p", report_folder],
         alwaysRun=True,
         doStepIf=hasReachedBarrier("update")
     ))
     factory.addStep(steps.MasterShellCommand(name="Extract the report on the master",
-        command=["tar", "xjf",
-                 util.Interpolate(f"{report_basename}.tar.bz2"),
-                 "-C", util.Interpolate(f"{report_basename}"),
+        command=["tar", "xjf", report_tar,
+                 "-C", report_folder,
                  "--strip-components=1"],
         alwaysRun=True,
         doStepIf=hasReachedBarrier("update")

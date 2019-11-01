@@ -25,8 +25,8 @@ def Create(name):
     # this allows to work on the template without having to restart Buildbot
     app.config['TEMPLATES_AUTO_RELOAD'] = True
     app.add_url_rule("/index.html", "index", lambda: dashboard(app))
-    app.add_url_rule("/logs/<buildname>/<path:packagename>/<logtype>", "log_get", log_get)
-    app.add_url_rule("/test-results/<buildname>/<path:packagename>", "test_results_get", test_results_get)
+    app.add_url_rule("/logs/<reports_name>/<path:packagename>/<logtype>", "log_get", log_get)
+    app.add_url_rule("/test-results/<reports_name>/<path:packagename>", "test_results_get", test_results_get)
     return app
 
 
@@ -46,9 +46,9 @@ def dashboard(app):
     toplevel_builds = compute_toplevel_builds(builds)
     return render_template('dashboard.html', builds=builds, toplevel_builds=toplevel_builds)
 
-def test_results_get(buildname, packagename):
+def test_results_get(reports_name, packagename):
     build_reports = Path("build_reports").resolve(strict=True)
-    path = build_reports / buildname / 'logs' / 'test-results' / f"{packagename}.html"
+    path = build_reports / reports_name / 'logs' / 'test-results' / f"{packagename}.html"
     path = path.resolve(strict=True)
     # Make sure our arguments are not trying to get us out of build_reports/
     # This raises if `path` does not start with `build_reports`
@@ -59,9 +59,9 @@ def test_results_get(buildname, packagename):
     #contents = path.read_text();
     #return render_template('tests.html', contents=contents)
 
-def log_get(buildname, packagename, logtype):
+def log_get(reports_name, packagename, logtype):
     build_reports = Path("build_reports").resolve(strict=True)
-    path = build_reports / buildname / 'logs' / f"{packagename}-{logtype}.log"
+    path = build_reports / reports_name / 'logs' / f"{packagename}-{logtype}.log"
     path = path.resolve(strict=True)
     # Make sure our arguments are not trying to get us out of build_reports/
     # This raises if `path` does not start with `build_reports`
@@ -69,7 +69,7 @@ def log_get(buildname, packagename, logtype):
 
     log_contents = path.read_text()
     return render_template('log.html',
-        buildname=buildname, packagename=packagename,
+        reports_name=reports_name, packagename=packagename,
         logtype=logtype, log_contents=log_contents)
 
 def compute_build_info(builds, builders):
@@ -82,13 +82,15 @@ def compute_build_info(builds, builders):
                     builder.get('name')
                 )
                 name = f"{buildername}-{build['number']}"
+                reports_name = name.replace('/', ':')
 
-                report = package_info_for(name)
+                report = package_info_for(reports_name)
                 if not report is None:
                     summary = build_summary(report)
                     build_info = {
                         'id': build['buildid'],
                         'name': name,
+                        'reports_name': reports_name,
                         'builder_id': build['builderid'],
                         'build_number': build['number'],
                         'builder_name': buildername,
@@ -119,8 +121,8 @@ def compute_toplevel_builds(build_info):
 
     return info
 
-def package_info_for(buildname):
-    basedir = Path(f'build_reports/{buildname}')
+def package_info_for(reports_name):
+    basedir = Path(f'build_reports/{reports_name}')
     report_path = basedir / 'report.json'
     if not report_path.is_file():
         return
