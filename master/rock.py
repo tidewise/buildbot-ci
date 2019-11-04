@@ -29,6 +29,12 @@ class ImportCacheWorker(BaseWorker):
 
         container = spec['containers'][0]
         container['imagePullPolicy'] = 'Always'
+        container['resources'] = {
+            'requests': {
+                'cpu': 1,
+                'memory': f"1G"
+            }
+        }
         container['volumeMounts'] = [
             {
                 'name': 'cache-autoproj-import',
@@ -36,6 +42,10 @@ class ImportCacheWorker(BaseWorker):
                 'readOnly': False
             }
         ]
+        spec['tolerations'] = [{
+            'key': 'build-role',
+            'operator': 'Exists'
+        }]
         spec['volumes'] = [
             {
                 'name': 'cache-autoproj-import',
@@ -152,7 +162,6 @@ def Update(factory, osdeps=True):
                 logfile="autoproj-update"
             )
         ],
-        env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         locks=[cache_import_lock.access('counting')],
         haltOnFailure=True))
 
@@ -166,11 +175,26 @@ def CleanBuildCache(factory):
 
 def UpdateImportCache(factory):
     factory.addStep(steps.ShellCommand(
+        name="Install gem-compiler to cache the precompiled gems",
+        command=[
+            ".autoproj/bin/autoproj", "plugin", "install", "gem-compiler",
+            "--git", "https://github.com/tidewise/gem-compiler",
+            "--branch", "add_artifact_argument"
+        ],
+        haltOnFailure=True
+    ))
+    factory.addStep(steps.ShellCommand(
         name="Update the workspace's import cache",
-        command=[".autoproj/bin/autoproj", "cache",
-            CACHE_IMPORT_DIR, "--interactive=f", "-k"],
+        command=[
+            ".autoproj/bin/autoproj", "cache",
+            CACHE_IMPORT_DIR, "--interactive=f", "-k",
+            "--gems",
+            util.Interpolate("--gems-compile-force=%(prop:gems_compile_force:#?|t|f)s"),
+            "--gems-compile", "qtbindings", "rice+ruby/lib", "ffi"
+        ],
         locks=[cache_import_lock.access('exclusive')],
-        haltOnFailure=True))
+        haltOnFailure=True
+    ))
 
 def GitCredentials(factory, url, credentials):
     """Register credentials to be used by git to access a given url
@@ -229,6 +253,7 @@ def Bootstrap(factory, buildconf_url,
 
     seed_config += f"""
 import_log_enabled: false
+importer_cache_dir: "{CACHE_IMPORT_DIR}"
 separate_prefixes: true
 ROCK_SELECTED_FLAVOR: {flavor}
     """
@@ -288,7 +313,6 @@ def Build(factory):
     Barrier(factory, "build")
     AutoprojStep(factory, "ci", "build", "--interactive=f", "-k", p,
         "--cache", CACHE_BUILD_DIR, "--cache-ignore", util.Interpolate("%(prop:rebuild)s"),
-        env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         name="Building the workspace")
 
     Barrier(factory, "test")
@@ -310,7 +334,6 @@ def Build(factory):
         ifReached="test")
     AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
         name="Pushing to the build cache",
-        env={'AUTOBUILD_CACHE_DIR': CACHE_IMPORT_DIR},
         ifReached="build")
 
 class ReportPathRender:
@@ -392,7 +415,7 @@ def StandardSetup(c, name, buildconf_url,
               autobuild_url=autobuild_url,
               autoproj_ci_url=autoproj_ci_url)
 
-    Update(import_cache_factory, osdeps=False)
+    Update(import_cache_factory)
     UpdateImportCache(import_cache_factory)
 
     c['builders'].append(
