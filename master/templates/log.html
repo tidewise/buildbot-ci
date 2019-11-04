@@ -2,11 +2,11 @@
     <div class="container">
         {% if error %}
         <div class="row">
-            Log request failed for phase '{{ logtype }}' for package {{ packagename }} on {{ buildname }}
+            Log request failed for phase '{{ logtype }}' for package {{ packagename }} on {{ reports_name }}
         </div>
         {% else %}
         <div class="row">
-            Log for phase '{{ logtype }}' for package {{ packagename }} on {{ buildname }}
+            Log for phase '{{ logtype }}' for package {{ packagename }} on {{ reports_name }}
         </div>
         <div class="row">
             <pre>
