@@ -190,7 +190,7 @@ def UpdateImportCache(factory):
             CACHE_IMPORT_DIR, "--interactive=f", "-k",
             "--gems",
             util.Interpolate("--gems-compile-force=%(prop:gems_compile_force:#?|t|f)s"),
-            "--gems-compile", "qtbindings", "rice+ruby/lib", "ffi", "debase", "nokogiri"
+            "--gems-compile", "qtbindings", "rice+ruby/lib", "ffi"
         ],
         locks=[cache_import_lock.access('exclusive')],
         haltOnFailure=True
