@@ -12,7 +12,7 @@ resource "kubernetes_service" "cache-apt" {
 
     spec {
         selector = {
-            app = "${kubernetes_pod.cache-apt.metadata.0.labels.app}"
+            app = "${kubernetes_deployment.cache-apt.metadata.0.labels.app}"
         }
         port {
             name = "cache-apt"
@@ -28,28 +28,47 @@ resource "google_compute_disk" "cache-apt" {
     size  = "10"
 }
 
-resource "kubernetes_pod" "cache-apt" {
+resource "kubernetes_deployment" "cache-apt" {
     metadata {
-        name = "cache-apt"
+        name = "cache-apt-deployment"
         labels = {
             app = "cache-apt"
         }
     }
 
     spec {
-        container {
-            image = "gcr.io/${var.project}/cache-apt"
-            image_pull_policy = "Always"
-            name = "cache-apt"
-            volume_mount {
-                mount_path = "/var/cache/apt-cacher-ng"
-                name = "cache-apt"
+        replicas = 1
+
+        selector {
+            match_labels = {
+                app = "cache-apt"
             }
         }
-        volume {
-            name = "cache-apt"
-            gce_persistent_disk {
-                pd_name = "${google_compute_disk.cache-apt.name}"
+
+        template {
+            metadata {
+                labels = {
+                    app = "cache-apt"
+                }
+            }
+
+            spec {
+                container {
+                    image = "gcr.io/${var.project}/cache-apt"
+                    image_pull_policy = "Always"
+                    name = "cache-apt"
+                    volume_mount {
+                        mount_path = "/var/cache/apt-cacher-ng"
+                        name = "cache-apt"
+                    }
+                }
+
+                volume {
+                    name = "cache-apt"
+                    gce_persistent_disk {
+                        pd_name = "${google_compute_disk.cache-apt.name}"
+                    }
+                }
             }
         }
     }

@@ -10,7 +10,7 @@ resource "kubernetes_service" "cache-autoproj-build" {
 
     spec {
         selector = {
-            app = "${kubernetes_pod.cache-autoproj-build-server.metadata.0.labels.app}"
+            app = "${kubernetes_deployment.cache-autoproj-build-server.metadata.0.labels.app}"
         }
         port {
             name = "nfs4"
@@ -73,7 +73,7 @@ resource "kubernetes_persistent_volume_claim" "cache-autoproj-build" {
     }
 }
 
-resource "kubernetes_pod" "cache-autoproj-build-server" {
+resource "kubernetes_deployment" "cache-autoproj-build-server" {
     metadata {
         name = "cache-autoproj-build-server"
         labels = {
@@ -82,33 +82,51 @@ resource "kubernetes_pod" "cache-autoproj-build-server" {
     }
 
     spec {
-        security_context {
-            fs_group = 2000
-        }
+        replicas = 1
 
-        container {
-            name = "cache-autoproj-build-server"
-            image = "gcr.io/${var.project}/volume-nfs"
-            image_pull_policy = "Always"
-
-            security_context {
-                privileged = true
-            }
-
-            volume_mount {
-                name = "cache-autoproj-build"
-                # MUST BE /exports
-                #
-                # You cannot mount more than one NFS folder
-                # in /exports as NFS does NOT support exposing overlayfs
-                # folders. This would simply NOT work
-                mount_path = "/exports"
+        selector {
+            match_labels = {
+                app = "cache-autoproj-build"
             }
         }
-        volume {
-            name = "cache-autoproj-build"
-            gce_persistent_disk {
-                pd_name = "${google_compute_disk.cache-autoproj-build.name}"
+
+        template {
+            metadata {
+                labels = {
+                    app = "cache-autoproj-build"
+                }
+            }
+
+            spec {
+                security_context {
+                    fs_group = 2000
+                }
+
+                container {
+                    name = "cache-autoproj-build-server"
+                    image = "gcr.io/${var.project}/volume-nfs"
+                    image_pull_policy = "Always"
+
+                    security_context {
+                        privileged = true
+                    }
+
+                    volume_mount {
+                        name = "cache-autoproj-build"
+                        # MUST BE /exports
+                        #
+                        # You cannot mount more than one NFS folder
+                        # in /exports as NFS does NOT support exposing overlayfs
+                        # folders. This would simply NOT work
+                        mount_path = "/exports"
+                    }
+                }
+                volume {
+                    name = "cache-autoproj-build"
+                    gce_persistent_disk {
+                        pd_name = "${google_compute_disk.cache-autoproj-build.name}"
+                    }
+                }
             }
         }
     }
