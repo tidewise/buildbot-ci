@@ -107,6 +107,12 @@ resource "kubernetes_deployment" "cache-autoproj-build-server" {
                     image = "gcr.io/${var.project}/volume-nfs"
                     image_pull_policy = "Always"
 
+                    resources {
+                        requests {
+                            cpu = "0"
+                        }
+                    }
+
                     security_context {
                         privileged = true
                     }

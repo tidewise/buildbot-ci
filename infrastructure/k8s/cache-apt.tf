@@ -61,6 +61,11 @@ resource "kubernetes_deployment" "cache-apt" {
                         mount_path = "/var/cache/apt-cacher-ng"
                         name = "cache-apt"
                     }
+                    resources {
+                        requests {
+                            cpu = "0"
+                        }
+                    }
                 }
 
                 volume {

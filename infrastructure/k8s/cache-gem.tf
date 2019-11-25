@@ -62,6 +62,11 @@ resource "kubernetes_deployment" "cache-gem" {
                         mount_path = "/var/cache/gem"
                         name = "cache-gem"
                     }
+                    resources {
+                        requests {
+                            cpu = "0"
+                        }
+                    }
                 }
                 volume {
                     name = "cache-gem"
