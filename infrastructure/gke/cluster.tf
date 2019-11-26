@@ -27,6 +27,7 @@ resource "google_container_node_pool" "system" {
     node_config {
         machine_type = "g1-small"
         disk_size_gb = "10"
+        preemptible = true
 
         labels = {
             system-role = "1"
