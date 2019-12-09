@@ -28,7 +28,6 @@ class ImportCacheWorker(BaseWorker):
         spec = pod_def['spec']
 
         container = spec['containers'][0]
-        container['imagePullPolicy'] = 'Always'
         container['resources'] = {
             'requests': {
                 'cpu': 1,
@@ -61,7 +60,6 @@ class BuildCacheWorker(BaseWorker):
         spec = pod_def['spec']
 
         container = spec['containers'][0]
-        container['imagePullPolicy'] = 'Always'
         container['volumeMounts'] = [
             {
                 'name': 'cache-autoproj-build',
@@ -86,7 +84,6 @@ class BuildWorker(BaseWorker):
         memory = build.getProperty('memory_per_build_process_G', 2)
 
         container = spec['containers'][0]
-        container['imagePullPolicy'] = 'Always'
         container['resources'] = {
             'requests': {
                 'cpu': cpu,
