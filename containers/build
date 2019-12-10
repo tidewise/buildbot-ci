@@ -1,0 +1,42 @@
+#! /bin/sh -e
+# Script that creates the container images we need in the cluster, apart
+# from the worker itself
+
+project=$1
+buildbot_version=$2
+revision=$3
+if test -z "$project" || test -z "$buildbot_version" || test -z "$revision"; then
+    echo "usage: containers.sh PROJECT BUILDBOT_VERSION REVISION"
+    exit 1
+fi
+
+echo "Setting up for project ${project}"
+container_tag=$buildbot_version-$revision
+echo "Tag: $container_tag"
+
+(
+    set -e
+    cd containers/buildbot-worker-base
+    if ! test -d buildbot; then
+        git clone https://github.com/buildbot/buildbot
+    fi
+    cd buildbot
+    git reset --hard $buildbot_version
+)
+
+docker build -t gcr.io/$project/cache-apt --pull containers/apt-cacher-ng
+docker build -t gcr.io/$project/cache-gem --pull containers/gemstash
+docker build -t gcr.io/$project/volume-nfs --pull containers/nfs
+
+docker build -t gcr.io/$project/buildbot-master:$container_tag --pull \
+    containers/buildbot-master \
+    --build-arg=buildbot_version=$buildbot_version \
+    --build-arg=revision=$revision
+docker build -t gcr.io/$project/buildbot-worker-base:$container_tag --pull \
+    containers/buildbot-worker-base \
+    --build-arg=buildbot_version=$buildbot_version \
+    --build-arg=revision=$revision
+docker build -t gcr.io/$project/buildbot-worker:$container_tag \
+    containers/buildbot-worker \
+    --build-arg=buildbot_worker_base="gcr.io/$project/buildbot-worker-base:$container_tag" \
+    --build-arg=revision=$revision

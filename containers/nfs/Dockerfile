@@ -13,7 +13,7 @@
 # limitations under the License.
 
 FROM centos
-RUN yum -y install /usr/bin/ps /bin/pidof nfs-utils && yum clean all
+RUN yum -y install /usr/bin/ps /usr/bin/pidof nfs-utils && yum clean all
 RUN mkdir -p /exports
 ADD run_nfs.sh /usr/local/bin/
 

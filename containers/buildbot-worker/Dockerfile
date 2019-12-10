@@ -1,4 +1,5 @@
-FROM rockcore/buildbot-worker-base
+ARG buildbot_worker_base
+FROM $buildbot_worker_base
 
 USER root
 
@@ -18,6 +19,8 @@ RUN sudo apt-get update && \
     apt-get autoremove --purge -y && \
     rm -rf /var/lib/apt/lists/* && \
     rm -f /tmp/cleanup-qtbindings.sh
+
+ARG XVIEWER_VERSION=6.0.10
 
 RUN apt-get update && \
     apt-get install -y nodejs npm && \

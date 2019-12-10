@@ -1,11 +1,12 @@
 FROM        ubuntu:18.04
 MAINTAINER  TideWise
 
-ARG WORKER_SRCDIR
+ARG buildbot_version
+ARG revision
 
 # Last build date - this can be updated whenever there are security updates so
 # that everything is rebuilt
-ENV         security_updates_as_of 2018-06-15
+ENV         buildbot_version $buildbot_version
 
 # This will make apt-get install without question
 ARG         DEBIAN_FRONTEND=noninteractive
@@ -27,7 +28,7 @@ RUN         apt-get update && \
     # Test runs produce a great quantity of dead grandchild processes.  In a
     # non-docker environment, these are automatically reaped by init (process 1),
     # so we need to simulate that here.  See https://github.com/Yelp/dumb-init
-    curl https://github.com/Yelp/dumb-init/releases/download/v1.2.1/dumb-init_1.2.1_amd64.deb -Lo /tmp/init.deb && dpkg -i /tmp/init.deb &&\
+    curl https://github.com/Yelp/dumb-init/releases/download/v1.2.2/dumb-init_1.2.2_amd64.deb -Lo /tmp/init.deb && dpkg -i /tmp/init.deb &&\
     # Install required python packages, and twisted
     pip3 --no-cache-dir install 'twisted[tls]' 'txrequests' && \
     mkdir /buildbot &&\
