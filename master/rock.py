@@ -287,6 +287,8 @@ ROCK_SELECTED_FLAVOR: {flavor}
         commands=[
             util.ShellArg(command=["wget", bootstrap_script_url],
                 logfile="download", haltOnFailure=True),
+            util.ShellArg(command="mkdir -p /home/buildbot/.bundle", logfile="bundle-config",
+                haltOnFailure=True),
             util.ShellArg(command=bundle_config, logfile="bundle-config",
                 haltOnFailure=True),
             util.ShellArg(command=[
