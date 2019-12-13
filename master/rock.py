@@ -446,9 +446,10 @@ def StandardSetup(c, name, buildconf_url,
 
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-build",
-        workernames=build_workers,
-        factory=build_factory,
-        properties={ 'parallel_build_level': parallel_build_level })
+            workernames=build_workers,
+            factory=build_factory,
+            properties={ 'parallel_build_level': parallel_build_level }
+        )
     )
 
     return [import_cache_factory, build_factory]
