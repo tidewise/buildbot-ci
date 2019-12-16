@@ -1,6 +1,8 @@
 from buildbot.plugins import *
 from twisted.internet import defer
 
+import uuid
+
 AUTOPROJ_GIT_URL  = "https://github.com/rock-core/autoproj"
 AUTOBUILD_GIT_URL = "https://github.com/rock-core/autobuild"
 AUTOPROJ_CI_GIT_URL = "https://github.com/rock-core/autoproj-ci"
@@ -354,6 +356,22 @@ def BuildReport(factory):
     AutoprojStep(factory, "ci", "create-report", "--interactive=f", "buildbot-report",
         name="Generating report",
         ifReached="update")
+
+    AutoprojStep(factory, "versions", "--local", "--fingerprint", "--interactive=f",
+        name="Generating versions file",
+        ifReached="update")
+
+    uuid = str(uuid.uuid4())
+    factory.addStep(steps.StringDownload(uuid,
+        workerdest=f"buildbot-report/uuid",
+        name=f"Create a UUID file in /buildbot to identify the build image",
+        doStepIf=hasReachedBarrier("update")
+    ))
+    factory.addStep(steps.StringDownload(uuid,
+        workerdest=f"buildbot-report/uuid",
+        name=f"Create a UUID file in the report directory to identify the build image",
+        doStepIf=hasReachedBarrier("update")
+    ))
 
     report_folder = ReportPathRender("build_reports/", "")
     report_tar    = ReportPathRender("build_reports/", ".tar.bz2")
