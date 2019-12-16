@@ -287,10 +287,12 @@ ROCK_SELECTED_FLAVOR: {flavor}
         commands=[
             util.ShellArg(command=["wget", bootstrap_script_url],
                 logfile="download", haltOnFailure=True),
+            util.ShellArg(command="mkdir -p /home/buildbot/.bundle", logfile="bundle-config",
+                haltOnFailure=True),
             util.ShellArg(command=bundle_config, logfile="bundle-config",
                 haltOnFailure=True),
             util.ShellArg(command=[
-                "ruby", "autoproj_bootstrap",
+                util.Interpolate("%(prop:ruby:-ruby)s"), "autoproj_bootstrap",
                 "--seed-config=seed-config.yml",
                 "--no-interactive", *bootstrap_options, vcstype, buildconf_url,
                 util.Interpolate(f"branch=%(prop:branch:-{buildconf_default_branch})s")],
@@ -326,7 +328,7 @@ def Build(factory):
         name="Running unit tests")
 
     AutoprojStep(factory, "ci", "process-test-results", "--interactive=f",
-        "--xunit-viewer=/usr/local/bin/xunit-viewer",
+        util.Interpolate("--xunit-viewer=%(prop:xunit-viewer:-/usr/local/bin/xunit-viewer)s"),
         name="Postprocess test results",
         ifReached="test")
     AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
@@ -444,9 +446,10 @@ def StandardSetup(c, name, buildconf_url,
 
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-build",
-        workernames=build_workers,
-        factory=build_factory,
-        properties={ 'parallel_build_level': parallel_build_level })
+            workernames=build_workers,
+            factory=build_factory,
+            properties={ 'parallel_build_level': parallel_build_level }
+        )
     )
 
     return [import_cache_factory, build_factory]
