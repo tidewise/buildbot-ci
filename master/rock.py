@@ -287,6 +287,8 @@ ROCK_SELECTED_FLAVOR: {flavor}
     factory.addStep(steps.ShellSequence(
         name="Bootstrap",
         commands=[
+            util.ShellArg(command=["cp", "/var/lib/dpkg/status", "dpkg-status.orig"],
+                logfile="save the original dpkg status file", haltOnFailure=True),
             util.ShellArg(command=["wget", bootstrap_script_url],
                 logfile="download", haltOnFailure=True),
             util.ShellArg(command="mkdir -p /home/buildbot/.bundle", logfile="bundle-config",
@@ -357,25 +359,47 @@ def BuildReport(factory):
         name="Generating report",
         ifReached="update")
 
-    AutoprojStep(factory, "versions", "--local", "--fingerprint", "--interactive=f",
+    AutoprojStep(factory, "envsh", "--interactive=f",
+        name="Regen the env.sh file",
+        ifReached="update")
+
+    AutoprojStep(factory, "versions", "--local", "--fingerprint",
+            "--interactive=f", '--save=buildbot-report/versions.yml',
         name="Generating versions file",
         ifReached="update")
 
-    uuid = str(uuid.uuid4())
-    factory.addStep(steps.StringDownload(uuid,
-        workerdest=f"buildbot-report/uuid",
-        name=f"Create a UUID file in /buildbot to identify the build image",
-        doStepIf=hasReachedBarrier("update")
-    ))
-    factory.addStep(steps.StringDownload(uuid,
+    vm_uuid = str(uuid.uuid4())
+    factory.addStep(steps.StringDownload(vm_uuid,
         workerdest=f"buildbot-report/uuid",
         name=f"Create a UUID file in the report directory to identify the build image",
+        alwaysRun=True,
         doStepIf=hasReachedBarrier("update")
     ))
 
     report_folder = ReportPathRender("build_reports/", "")
     report_tar    = ReportPathRender("build_reports/", ".tar.bz2")
 
+    factory.addStep(steps.ShellCommand(name="Copy the installation manifest",
+        command=["cp", ".autoproj/installation-manifest",
+                 "buildbot-report/installation-manifest"],
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("update")
+    ))
+    factory.addStep(steps.ShellCommand(name="Copy the env.sh file",
+        command=["cp", "env.sh", "buildbot-report/env.sh"],
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("update")
+    ))
+    factory.addStep(steps.ShellCommand(name="Copy the original dpkg status file",
+        command=["cp", "dpkg-status.orig", "buildbot-report/dpkg-status.orig"],
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("update")
+    ))
+    factory.addStep(steps.ShellCommand(name="Copy the final dpkg status file",
+        command=["cp", "/var/lib/dpkg/status", "buildbot-report/dpkg-status.new"],
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("update")
+    ))
     factory.addStep(steps.ShellCommand(name="Compress the report directory",
         command=["tar", "cjf", "build_report.tar.bz2", "buildbot-report"],
         alwaysRun=True,
@@ -470,4 +494,30 @@ def StandardSetup(c, name, buildconf_url,
         )
     )
 
-    return [import_cache_factory, build_factory]
+    return (import_cache_factory, build_factory)
+
+def BuildArtifacts(factory):
+    AutoprojStep(factory, "ci", "rebuild-root", 'buildbot-report/', CACHE_BUILD_DIR, "build_artifacts.tar.gz",
+        name="Create the build artifacts tarball",
+        ifReached="build")
+
+    artifacts_tar    = ReportPathRender("build_artifacts/", ".tar.gz")
+    factory.addStep(steps.FileUpload(name="Download the build artifacts",
+        workersrc="build_artifacts.tar.gz",
+        masterdest=artifacts_tar,
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("build")))
+
+    artifacts_dpkg_orig = ReportPathRender("build_artifacts/", ".dpkg-orig")
+    artifacts_dpkg_new = ReportPathRender("build_artifacts/", ".dpkg-new")
+    factory.addStep(steps.FileUpload(name="Download the original dpkg list",
+        workersrc="buildbot-report/dpkg-status.orig",
+        masterdest=artifacts_dpkg_orig,
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("build")))
+    factory.addStep(steps.FileUpload(name="Download the new dpkg list",
+        workersrc="buildbot-report/dpkg-status.new",
+        masterdest=artifacts_dpkg_new,
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("build")))
+
