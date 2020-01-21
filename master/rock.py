@@ -501,14 +501,14 @@ def StandardSetup(c, name, buildconf_url,
 def BuildArtifacts(factory):
     AutoprojStep(factory, "ci", "rebuild-root", 'buildbot-report/', CACHE_BUILD_DIR, "build_artifacts.tar.gz",
         name="Create the build artifacts tarball",
-        ifReached="build")
+        ifReached="test")
 
     artifacts_tar    = ReportPathRender("build_artifacts/", ".tar.gz")
     factory.addStep(steps.FileUpload(name="Download the build artifacts",
         workersrc="build_artifacts.tar.gz",
         masterdest=artifacts_tar,
         alwaysRun=True,
-        doStepIf=hasReachedBarrier("build")))
+        doStepIf=hasReachedBarrier("test")))
 
     artifacts_dpkg_orig = ReportPathRender("build_artifacts/", ".dpkg-orig")
     artifacts_dpkg_new = ReportPathRender("build_artifacts/", ".dpkg-new")
@@ -516,10 +516,10 @@ def BuildArtifacts(factory):
         workersrc="buildbot-report/dpkg-status.orig",
         masterdest=artifacts_dpkg_orig,
         alwaysRun=True,
-        doStepIf=hasReachedBarrier("build")))
+        doStepIf=hasReachedBarrier("test")))
     factory.addStep(steps.FileUpload(name="Download the new dpkg list",
         workersrc="buildbot-report/dpkg-status.new",
         masterdest=artifacts_dpkg_new,
         alwaysRun=True,
-        doStepIf=hasReachedBarrier("build")))
+        doStepIf=hasReachedBarrier("test")))
 
