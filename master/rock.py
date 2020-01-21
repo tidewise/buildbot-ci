@@ -498,8 +498,13 @@ def StandardSetup(c, name, buildconf_url,
 
     return (import_cache_factory, build_factory)
 
-def BuildArtifacts(factory):
-    AutoprojStep(factory, "ci", "rebuild-root", 'buildbot-report/', CACHE_BUILD_DIR, "build_artifacts.tar.gz",
+def BuildArtifacts(factory, workspace=None):
+    workspaceArgs = []
+    if workspace is not None:
+        workspaceArgs = ['--workspace', workspace]
+
+    AutoprojStep(factory, "ci", "rebuild-root", 'buildbot-report/',
+            CACHE_BUILD_DIR, "build_artifacts.tar.gz", *workspaceArgs,
         name="Create the build artifacts tarball",
         ifReached="test")
 
