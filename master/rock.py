@@ -310,13 +310,14 @@ ROCK_SELECTED_FLAVOR: {flavor}
         ],
         haltOnFailure=True))
 
-def Build(factory):
+def Build(factory, build_timeout=1200):
     p = util.Interpolate('-p%(prop:parallel_build_level:-1)s')
 
     Barrier(factory, "build")
     AutoprojStep(factory, "ci", "build", "--interactive=f", "-k", p,
         "--cache", CACHE_BUILD_DIR, "--cache-ignore", util.Interpolate("%(prop:rebuild)s"),
-        name="Building the workspace")
+        name="Building the workspace",
+        timeout=build_timeout)
 
     Barrier(factory, "test")
     factory.addStep(steps.FileDownload(name="copy omniNames startup script",
@@ -435,6 +436,7 @@ def StandardSetup(c, name, buildconf_url,
                   import_workers=["import-cache"],
                   build_workers=["build"],
                   parallel_build_level=4,
+                  build_timeout=1200,
                   autoproj_url=AUTOPROJ_GIT_URL,
                   autobuild_url=AUTOBUILD_GIT_URL,
                   autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
@@ -483,7 +485,7 @@ def StandardSetup(c, name, buildconf_url,
               autoproj_ci_url=autoproj_ci_url)
 
     Update(build_factory)
-    Build(build_factory)
+    Build(build_factory, build_timeout=build_timeout)
     BuildReport(build_factory)
 
     c['builders'].append(
