@@ -157,7 +157,7 @@ def Update(factory, osdeps=True):
         commands=[*osdeps_update,
             util.ShellArg(
                 command=[".autoproj/bin/autoproj", "update", *arguments,
-                    "--interactive=f", "-k"],
+                    "--bundler=f", "--autoproj=f", "--interactive=f", "-k"],
                 logfile="autoproj-update"
             )
         ],
