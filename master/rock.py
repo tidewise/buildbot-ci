@@ -185,7 +185,7 @@ def UpdateImportCache(factory):
     factory.addStep(steps.ShellCommand(
         name="Update the workspace's import cache",
         command=[
-            ".autoproj/bin/autoproj", "cache",
+            ".autoproj/bin/autoproj", "cache", '--all=f',
             CACHE_IMPORT_DIR, "--interactive=f", "-k",
             "--gems",
             util.Interpolate("--gems-compile-force=%(prop:gems_compile_force:#?|t|f)s"),
