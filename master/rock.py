@@ -141,7 +141,7 @@ def AutoprojStep(factory, *args, name=None, ifReached=None, **kwargs):
         command=[".autoproj/bin/autoproj", *args],
         haltOnFailure=True, **barrierArgs, **kwargs))
 
-def Update(factory, osdeps=True):
+def Update(factory, osdeps=True, import_timeout=1200):
     osdeps_update = []
     arguments = []
 
@@ -161,6 +161,7 @@ def Update(factory, osdeps=True):
                 logfile="autoproj-update"
             )
         ],
+        timeout=import_timeout,
         locks=[cache_import_lock.access('counting')],
         haltOnFailure=True))
 
@@ -436,6 +437,7 @@ def StandardSetup(c, name, buildconf_url,
                   import_workers=["import-cache"],
                   build_workers=["build"],
                   parallel_build_level=4,
+                  import_timeout=1200,
                   build_timeout=1200,
                   autoproj_url=AUTOPROJ_GIT_URL,
                   autobuild_url=AUTOBUILD_GIT_URL,
@@ -458,7 +460,7 @@ def StandardSetup(c, name, buildconf_url,
               autobuild_url=autobuild_url,
               autoproj_ci_url=autoproj_ci_url)
 
-    Update(import_cache_factory)
+    Update(import_cache_factory, import_timeout=import_timeout)
     UpdateImportCache(import_cache_factory)
 
     c['builders'].append(
@@ -484,7 +486,7 @@ def StandardSetup(c, name, buildconf_url,
               autobuild_url=autobuild_url,
               autoproj_ci_url=autoproj_ci_url)
 
-    Update(build_factory)
+    Update(build_factory, import_timeout=import_timeout)
     Build(build_factory, build_timeout=build_timeout)
     BuildReport(build_factory)
 
