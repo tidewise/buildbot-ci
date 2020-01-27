@@ -11,7 +11,7 @@ CACHE_IMPORT_DIR = "/var/cache/autoproj/import"
 cache_import_lock = util.MasterLock("cache-import")
 
 CACHE_BUILD_BASE_DIR = '/var/cache/autoproj/build'
-CACHE_BUILD_DIR = util.Interpolate(f"{CACHE_BUILD_BASE_DIR}/%(prop:buildername)s")
+CACHE_BUILD_DIR = util.Interpolate(f"{CACHE_BUILD_BASE_DIR}/%(prop:build_cache_key:-%(prop:buildername)s)s")
 
 class BaseWorker(worker.KubeLatentWorker):
     @defer.inlineCallbacks
@@ -439,6 +439,7 @@ def StandardSetup(c, name, buildconf_url,
                   parallel_build_level=4,
                   import_timeout=1200,
                   build_timeout=1200,
+                  properties={},
                   autoproj_url=AUTOPROJ_GIT_URL,
                   autobuild_url=AUTOBUILD_GIT_URL,
                   autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
@@ -490,11 +491,13 @@ def StandardSetup(c, name, buildconf_url,
     Build(build_factory, build_timeout=build_timeout)
     BuildReport(build_factory)
 
+    build_properties = { 'parallel_build_level': parallel_build_level }
+    build_properties.update(properties)
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-build",
             workernames=build_workers,
             factory=build_factory,
-            properties={ 'parallel_build_level': parallel_build_level }
+            properties=build_properties
         )
     )
 
