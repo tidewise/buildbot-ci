@@ -509,9 +509,30 @@ def BuildArtifacts(factory, workspace=None):
         workspaceArgs = ['--workspace', workspace]
 
     AutoprojStep(factory, "ci", "rebuild-root", 'buildbot-report/',
-            CACHE_BUILD_DIR, "build_artifacts.tar.gz", *workspaceArgs,
+            CACHE_BUILD_DIR, "build_artifacts.tar", *workspaceArgs,
         name="Create the build artifacts tarball",
         ifReached="test")
+
+    factory.addStep(steps.ShellCommand(name="Add the gems to the artifacts",
+        command=[
+            "tar", "rf", "build_artifacts.tar", "-C", "/",
+             "--owner=root", "--group=root",
+             "/home/buildbot/.local/share/autoproj/gems",
+             "--exclude", "*.o",
+             "--exclude", "*.a",
+             "--exclude", "home/buildbot/.local/share/autoproj/gems/ruby/*/gems/*/test",
+             "--exclude", "home/buildbot/.local/share/autoproj/gems/ruby/*/gems/*/spec",
+             "--exclude", "*.gem"
+        ],
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("test")
+    ))
+
+    factory.addStep(steps.ShellCommand(name="Compress the artifacts",
+        command=["gzip", "build_artifacts.tar"],
+        alwaysRun=True,
+        doStepIf=hasReachedBarrier("test")
+    ))
 
     artifacts_tar    = ReportPathRender("build_artifacts/", ".tar.gz")
     factory.addStep(steps.FileUpload(name="Download the build artifacts",
