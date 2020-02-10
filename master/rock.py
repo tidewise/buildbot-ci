@@ -8,7 +8,7 @@ AUTOBUILD_GIT_URL = "https://github.com/rock-core/autobuild"
 AUTOPROJ_CI_GIT_URL = "https://github.com/rock-core/autoproj-ci"
 
 CACHE_IMPORT_DIR = "/var/cache/autoproj/import"
-cache_import_lock = util.MasterLock("cache-import")
+cache_import_lock = util.MasterLock("cache-import", maxCount=512)
 
 CACHE_BUILD_BASE_DIR = '/var/cache/autoproj/build'
 CACHE_BUILD_DIR = util.Interpolate(f"{CACHE_BUILD_BASE_DIR}/%(prop:build_cache_key:-%(prop:buildername)s)s")
