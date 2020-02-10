@@ -316,7 +316,9 @@ def Build(factory, build_timeout=1200):
 
     Barrier(factory, "build")
     AutoprojStep(factory, "ci", "build", "--interactive=f", "-k", p,
-        "--cache", CACHE_BUILD_DIR, "--cache-ignore", util.Interpolate("%(prop:rebuild)s"),
+        "--progress=t",
+        "--cache", CACHE_BUILD_DIR,
+        "--cache-ignore", util.Transform(str.split, util.Interpolate("%(prop:rebuild)s"), " "),
         name="Building the workspace",
         timeout=build_timeout)
 
