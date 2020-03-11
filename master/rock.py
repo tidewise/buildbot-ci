@@ -237,6 +237,7 @@ def Bootstrap(factory, buildconf_url,
               seed_config_path=None,
               flavor="master",
               tests=True,
+              build_cache_max_size_GB=None,
               autoproj_url=AUTOPROJ_GIT_URL,
               autobuild_url=AUTOBUILD_GIT_URL,
               autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
@@ -293,6 +294,19 @@ ROCK_SELECTED_FLAVOR: {flavor}
             )
         ]
 
+    cache_cleanup_steps=[]
+    if build_cache_max_size_GB is not None:
+        cache_cleanup_steps=[
+            util.ShellArg(
+                command=[
+                    ".autoproj/bin/autoproj", "ci", "build-cache-cleanup",
+                    f"--max-size={build_cache_max_size_GB}",
+                    CACHE_BUILD_BASE_DIR
+                ],
+                logfile="build cache cleanup"
+            )
+        ]
+
     bundle_config = util.Interpolate(
         'echo "BUNDLE_JOBS: \"%(prop:parallel_build_level:-1)s\"" >> /home/buildbot/.bundle/config')
     factory.addStep(steps.ShellSequence(
@@ -315,7 +329,7 @@ ROCK_SELECTED_FLAVOR: {flavor}
             util.ShellArg(command=[
                 ".autoproj/bin/autoproj", "plugin", "install", "autoproj-ci", *autoproj_ci_args],
                 logfile="plugins", haltOnFailure=True)
-        ] + test_steps,
+        ] + test_steps + cache_cleanup_steps,
         haltOnFailure=True))
 
 def Build(factory, tests=True, test_utilities=['omniorb', 'x11'], build_timeout=1200):
@@ -456,6 +470,7 @@ def StandardSetup(c, name, buildconf_url,
                   parallel_build_level=4,
                   import_timeout=1200,
                   build_timeout=1200,
+                  build_cache_max_size_GB=None,
                   properties={},
                   tests=True,
                   test_utilities=['omniorb', 'x11'],
@@ -504,6 +519,7 @@ def StandardSetup(c, name, buildconf_url,
               autoproj_ci_branch=autoproj_ci_branch,
               seed_config_path=seed_config_path,
               flavor=flavor,
+              build_cache_max_size_GB=build_cache_max_size_GB,
               autoproj_url=autoproj_url,
               autobuild_url=autobuild_url,
               autoproj_ci_url=autoproj_ci_url)
@@ -539,12 +555,12 @@ def BuildArtifacts(factory, workspace=None):
         command=[
             "tar", "rf", "build_artifacts.tar", "-C", "/",
              "--owner=root", "--group=root",
-             "/home/buildbot/.local/share/autoproj/gems",
              "--exclude", "*.o",
              "--exclude", "*.a",
              "--exclude", "home/buildbot/.local/share/autoproj/gems/ruby/*/gems/*/test",
              "--exclude", "home/buildbot/.local/share/autoproj/gems/ruby/*/gems/*/spec",
-             "--exclude", "*.gem"
+             "--exclude", "*.gem",
+             "/home/buildbot/.local/share/autoproj/gems"
         ],
         alwaysRun=True,
         doStepIf=hasReachedBarrier("test")
