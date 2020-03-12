@@ -128,7 +128,7 @@ def Barrier(factory, name):
 def hasReachedBarrier(name):
     return lambda step: step.getProperty(f"{name}BarrierReached", default=False)
 
-def AutoprojStep(factory, *args, name=None, ifReached=None, **kwargs):
+def AutoprojStep(factory, *args, wrapper=[], name=None, ifReached=None, **kwargs):
     if name is None:
         name = f"autoproj {args[0]}"
 
@@ -138,7 +138,7 @@ def AutoprojStep(factory, *args, name=None, ifReached=None, **kwargs):
                         "doStepIf": hasReachedBarrier(ifReached) }
 
     factory.addStep(steps.ShellCommand(name=name,
-        command=[".autoproj/bin/autoproj", *args],
+        command=[*wrapper, ".autoproj/bin/autoproj", *args],
         haltOnFailure=True, **barrierArgs, **kwargs))
 
 def Update(factory, osdeps=True, import_timeout=1200):
@@ -236,6 +236,8 @@ def Bootstrap(factory, buildconf_url,
               autoproj_ci_branch=None,
               seed_config_path=None,
               flavor="master",
+              tests=True,
+              build_cache_max_size_GB=None,
               autoproj_url=AUTOPROJ_GIT_URL,
               autobuild_url=AUTOBUILD_GIT_URL,
               autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
@@ -283,6 +285,28 @@ ROCK_SELECTED_FLAVOR: {flavor}
     if autoproj_ci_branch is not None:
         autoproj_ci_args=["--git", autoproj_ci_url, "--branch", autoproj_ci_branch]
 
+    test_steps=[]
+    if tests:
+        test_steps=[
+            util.ShellArg(
+                command=[".autoproj/bin/autoproj", "test", "default", "on"],
+                logfile="enable-tests"
+            )
+        ]
+
+    cache_cleanup_steps=[]
+    if build_cache_max_size_GB is not None:
+        cache_cleanup_steps=[
+            util.ShellArg(
+                command=[
+                    ".autoproj/bin/autoproj", "ci", "build-cache-cleanup",
+                    f"--max-size={build_cache_max_size_GB}",
+                    CACHE_BUILD_BASE_DIR
+                ],
+                logfile="build cache cleanup"
+            )
+        ]
+
     bundle_config = util.Interpolate(
         'echo "BUNDLE_JOBS: \"%(prop:parallel_build_level:-1)s\"" >> /home/buildbot/.bundle/config')
     factory.addStep(steps.ShellSequence(
@@ -304,14 +328,11 @@ ROCK_SELECTED_FLAVOR: {flavor}
                 logfile="bootstrap", haltOnFailure=True),
             util.ShellArg(command=[
                 ".autoproj/bin/autoproj", "plugin", "install", "autoproj-ci", *autoproj_ci_args],
-                logfile="plugins", haltOnFailure=True),
-            util.ShellArg(
-                command=[".autoproj/bin/autoproj", "test", "default", "on"],
-                logfile="enable-tests"),
-        ],
+                logfile="plugins", haltOnFailure=True)
+        ] + test_steps + cache_cleanup_steps,
         haltOnFailure=True))
 
-def Build(factory, build_timeout=1200):
+def Build(factory, tests=True, test_utilities=['omniorb', 'x11'], build_timeout=1200):
     p = util.Interpolate('-p%(prop:parallel_build_level:-1)s')
 
     Barrier(factory, "build")
@@ -323,22 +344,30 @@ def Build(factory, build_timeout=1200):
         timeout=build_timeout)
 
     Barrier(factory, "test")
-    factory.addStep(steps.FileDownload(name="copy omniNames startup script",
-        workerdest="/buildbot/start-omniNames",
-        mastersrc="start-omniNames",
-        mode=0o755,
-        haltOnFailure=True))
-    factory.addStep(steps.ShellCommand(name="start omniNames for tests",
-        command=["/buildbot/start-omniNames"],
-        haltOnFailure=True,
-        usePTY=True))
-    AutoprojStep(factory, "ci", "test", "--interactive=f", "-k", p,
-        name="Running unit tests")
+    if tests:
+        for utility in test_utilities:
+            factory.addStep(steps.FileDownload(name=f"copy {utility} setup script",
+                workerdest=f"/buildbot/start-{utility}",
+                mastersrc=f"start-{utility}",
+                mode=0o755,
+                haltOnFailure=True))
+            factory.addStep(steps.ShellCommand(name=f"setup {utility} for tests",
+                command=[f"/buildbot/start-{utility}"],
+                haltOnFailure=True,
+                usePTY=True))
 
-    AutoprojStep(factory, "ci", "process-test-results", "--interactive=f",
-        util.Interpolate("--xunit-viewer=%(prop:xunit-viewer:-/usr/local/bin/xunit-viewer)s"),
-        name="Postprocess test results",
-        ifReached="test")
+        wrapper=[]
+        if 'x11' in test_utilities:
+            wrapper=['xvfb-run']
+
+        AutoprojStep(factory, "ci", "test", "--interactive=f", "-k", p,
+            name="Running unit tests", wrapper=wrapper)
+
+        AutoprojStep(factory, "ci", "process-test-results", "--interactive=f",
+            util.Interpolate("--xunit-viewer=%(prop:xunit-viewer:-/usr/local/bin/xunit-viewer)s"),
+            name="Postprocess test results",
+            ifReached="test")
+
     AutoprojStep(factory, "ci", "cache-push", "--interactive=f", CACHE_BUILD_DIR,
         name="Pushing to the build cache",
         ifReached="build")
@@ -441,7 +470,10 @@ def StandardSetup(c, name, buildconf_url,
                   parallel_build_level=4,
                   import_timeout=1200,
                   build_timeout=1200,
+                  build_cache_max_size_GB=None,
                   properties={},
+                  tests=True,
+                  test_utilities=['omniorb', 'x11'],
                   autoproj_url=AUTOPROJ_GIT_URL,
                   autobuild_url=AUTOBUILD_GIT_URL,
                   autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
@@ -454,6 +486,7 @@ def StandardSetup(c, name, buildconf_url,
     Bootstrap(import_cache_factory, buildconf_url,
               buildconf_default_branch=buildconf_default_branch,
               vcstype=vcstype,
+              tests=tests,
               autoproj_branch=autoproj_branch,
               autobuild_branch=autobuild_branch,
               autoproj_ci_branch=autoproj_ci_branch,
@@ -480,17 +513,20 @@ def StandardSetup(c, name, buildconf_url,
     Bootstrap(build_factory, buildconf_url,
               buildconf_default_branch=buildconf_default_branch,
               vcstype=vcstype,
+              tests=tests,
               autoproj_branch=autoproj_branch,
               autobuild_branch=autobuild_branch,
               autoproj_ci_branch=autoproj_ci_branch,
               seed_config_path=seed_config_path,
               flavor=flavor,
+              build_cache_max_size_GB=build_cache_max_size_GB,
               autoproj_url=autoproj_url,
               autobuild_url=autobuild_url,
               autoproj_ci_url=autoproj_ci_url)
 
     Update(build_factory, import_timeout=import_timeout)
-    Build(build_factory, build_timeout=build_timeout)
+    Build(build_factory, build_timeout=build_timeout,
+          tests=tests, test_utilities=test_utilities)
     BuildReport(build_factory)
 
     build_properties = { 'parallel_build_level': parallel_build_level }
@@ -519,12 +555,12 @@ def BuildArtifacts(factory, workspace=None):
         command=[
             "tar", "rf", "build_artifacts.tar", "-C", "/",
              "--owner=root", "--group=root",
-             "/home/buildbot/.local/share/autoproj/gems",
              "--exclude", "*.o",
              "--exclude", "*.a",
              "--exclude", "home/buildbot/.local/share/autoproj/gems/ruby/*/gems/*/test",
              "--exclude", "home/buildbot/.local/share/autoproj/gems/ruby/*/gems/*/spec",
-             "--exclude", "*.gem"
+             "--exclude", "*.gem",
+             "/home/buildbot/.local/share/autoproj/gems"
         ],
         alwaysRun=True,
         doStepIf=hasReachedBarrier("test")
