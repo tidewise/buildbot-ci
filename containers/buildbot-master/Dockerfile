@@ -14,5 +14,4 @@ RUN apk add py3-libvirt
 
 COPY 'configure-host-and-exec' '/usr/local/bin'
 
-USER buildbot
 CMD ["/usr/local/bin/configure-host-and-exec", "dumb-init", "/usr/src/buildbot/docker/start_buildbot.sh"]
