@@ -34,3 +34,4 @@ COPY files/etc/apt/apt.conf.d/01cache /etc/apt/apt.conf.d/01cache
 
 COPY --chown=buildbot files/home/.bundle/config /home/buildbot/.bundle/config
 
+USER buildbot
