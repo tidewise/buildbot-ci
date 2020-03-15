@@ -173,7 +173,7 @@ def CleanBuildCache(factory):
         name="Check result",
         command=["find", util.Interpolate(f"{CACHE_BUILD_BASE_DIR}/%(prop:target_buildername)s")]))
 
-def UpdateImportCache(factory):
+def UpdateImportCache(factory, gem_compile=["ffi"]):
     factory.addStep(steps.ShellCommand(
         name="Install gem-compiler to cache the precompiled gems",
         command=[
@@ -190,7 +190,7 @@ def UpdateImportCache(factory):
             CACHE_IMPORT_DIR, "--interactive=f", "-k",
             "--gems",
             util.Interpolate("--gems-compile-force=%(prop:gems_compile_force:#?|t|f)s"),
-            "--gems-compile", "rice+ruby/lib", "ffi"
+            "--gems-compile", gem_compile
         ],
         locks=[cache_import_lock.access('exclusive')],
         haltOnFailure=True
@@ -484,6 +484,7 @@ def StandardSetup(c, name, buildconf_url,
                   properties={},
                   tests=True,
                   test_utilities=['omniorb', 'x11'],
+                  gem_compile=["ffi"],
                   autoproj_url=AUTOPROJ_GIT_URL,
                   autobuild_url=AUTOBUILD_GIT_URL,
                   autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
@@ -508,7 +509,7 @@ def StandardSetup(c, name, buildconf_url,
               autoproj_ci_url=autoproj_ci_url)
 
     Update(import_cache_factory, import_timeout=import_timeout)
-    UpdateImportCache(import_cache_factory)
+    UpdateImportCache(import_cache_factory, gem_compile=gem_compile)
 
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-import-cache",
