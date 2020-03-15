@@ -9,7 +9,7 @@ variable "zone" {
 }
 
 module "gke" {
-    source   = "./gke"
+    source   = "../gke"
     credentials = "${file("account.json")}"
     project  = "${var.project}"
     region   = "${var.region}"
@@ -18,7 +18,7 @@ module "gke" {
 }
 
 module "k8s" {
-    source = "./k8s"
+    source = "../k8s"
     host     = "${module.gke.host}"
 
     credentials = "${file("account.json")}"

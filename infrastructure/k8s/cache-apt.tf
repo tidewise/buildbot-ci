@@ -21,13 +21,6 @@ resource "kubernetes_service" "cache-apt" {
     }
 }
 
-resource "google_compute_disk" "cache-apt" {
-    name  = "cache-apt"
-    type  = "pd-standard"
-    zone  = "${var.zone}"
-    size  = "10"
-}
-
 resource "kubernetes_deployment" "cache-apt" {
     metadata {
         name = "cache-apt-deployment"
