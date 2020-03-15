@@ -10,7 +10,7 @@ resource "kubernetes_service" "cache-autoproj-build" {
 
     spec {
         selector = {
-            app = "${kubernetes_deployment.cache-autoproj-build-server.metadata.0.labels.app}"
+            app = kubernetes_deployment.cache-autoproj-build-server.metadata.0.labels.app
         }
         port {
             name = "nfs4"
@@ -27,13 +27,6 @@ resource "kubernetes_service" "cache-autoproj-build" {
     }
 }
 
-resource "google_compute_disk" "cache-autoproj-build" {
-    name  = "cache-autoproj-build"
-    type  = "pd-standard"
-    zone  = "${var.zone}"
-    size  = "20"
-}
-
 resource "kubernetes_persistent_volume" "cache-autoproj-build" {
     metadata {
         name = "cache-autoproj-build"
@@ -41,7 +34,7 @@ resource "kubernetes_persistent_volume" "cache-autoproj-build" {
 
     spec {
         capacity = {
-            storage = "20G"
+            storage = "${var.capacities.cache-autoproj-build}Gi"
         }
         # Without this, the claim (where class_name == "standard") would
         # not match
@@ -66,10 +59,26 @@ resource "kubernetes_persistent_volume_claim" "cache-autoproj-build" {
         access_modes = ["ReadWriteMany"]
         resources {
             requests = {
-                storage = "20G"
+                storage = "${var.capacities.cache-autoproj-build}Gi"
             }
         }
-        volume_name = "${kubernetes_persistent_volume.cache-autoproj-build.metadata.0.name}"
+        volume_name = kubernetes_persistent_volume.cache-autoproj-build.metadata.0.name
+    }
+}
+
+resource "kubernetes_persistent_volume_claim" "cache-autoproj-build-server" {
+    metadata {
+        name = "cache-autoproj-build-server"
+    }
+
+    spec {
+        access_modes = ["ReadWriteOnce"]
+        resources {
+            requests = {
+                storage = "${var.capacities.cache-autoproj-build}Gi"
+            }
+        }
+        volume_name = "cache-autoproj-build-server"
     }
 }
 
@@ -129,8 +138,8 @@ resource "kubernetes_deployment" "cache-autoproj-build-server" {
                 }
                 volume {
                     name = "cache-autoproj-build"
-                    gce_persistent_disk {
-                        pd_name = "${google_compute_disk.cache-autoproj-build.name}"
+                    persistent_volume_claim {
+                        claim_name = "cache-autoproj-build-server"
                     }
                 }
             }

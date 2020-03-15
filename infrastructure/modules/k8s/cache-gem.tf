@@ -25,7 +25,7 @@ resource "kubernetes_service" "cache-gem" {
 resource "google_compute_disk" "cache-gem" {
     name  = "cache-gem"
     type  = "pd-standard"
-    zone  = "${var.zone}"
+    zone  = var.zone
     size  = "10"
 }
 
@@ -71,7 +71,7 @@ resource "kubernetes_deployment" "cache-gem" {
                 volume {
                     name = "cache-gem"
                     gce_persistent_disk {
-                        pd_name = "${google_compute_disk.cache-gem.name}"
+                        pd_name = google_compute_disk.cache-gem.name
                     }
                 }
             }

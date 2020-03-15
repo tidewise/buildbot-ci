@@ -1,5 +1,5 @@
 resource "google_container_cluster" "primary" {
-    name   = "${var.cluster_name}"
+    name   = var.cluster_name
 
     # We can't create a cluster with no node pool defined, but we want to only use
     # separately managed node pools. So we create the smallest possible default
@@ -21,7 +21,7 @@ resource "google_container_cluster" "primary" {
 
 resource "google_container_node_pool" "system" {
     name       = "system-pool"
-    cluster    = "${google_container_cluster.primary.name}"
+    cluster    = google_container_cluster.primary.name
     node_count = 2
 
     node_config {
@@ -43,13 +43,13 @@ resource "google_container_node_pool" "system" {
 }
 
 resource "google_container_node_pool" "build" {
-    provider   = "google-beta"
+    provider   = google-beta
     name       = "build-pool"
-    cluster    = "${google_container_cluster.primary.name}"
+    cluster    = google_container_cluster.primary.name
 
     autoscaling {
         min_node_count = 0
-        max_node_count = 1
+        max_node_count = 4
     }
 
     node_config {
@@ -77,21 +77,21 @@ resource "google_container_node_pool" "build" {
 # The following outputs allow authentication and connectivity to the GKE Cluster
 # by using certificate-based authentication.
 output "client_certificate" {
-  value = "${google_container_cluster.primary.master_auth.0.client_certificate}"
+  value = google_container_cluster.primary.master_auth.0.client_certificate
   sensitive = true
 }
 
 output "client_key" {
-  value = "${google_container_cluster.primary.master_auth.0.client_key}"
+  value = google_container_cluster.primary.master_auth.0.client_key
   sensitive = true
 }
 
 output "cluster_ca_certificate" {
-  value = "${google_container_cluster.primary.master_auth.0.cluster_ca_certificate}"
+  value = google_container_cluster.primary.master_auth.0.cluster_ca_certificate
   sensitive = true
 }
 
 output "host" {
-  value = "${google_container_cluster.primary.endpoint}"
+  value = google_container_cluster.primary.endpoint
   sensitive = true
 }

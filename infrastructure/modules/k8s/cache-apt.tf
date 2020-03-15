@@ -21,11 +21,20 @@ resource "kubernetes_service" "cache-apt" {
     }
 }
 
-resource "google_compute_disk" "cache-apt" {
-    name  = "cache-apt"
-    type  = "pd-standard"
-    zone  = "${var.zone}"
-    size  = "10"
+resource "kubernetes_persistent_volume_claim" "cache-apt" {
+    metadata {
+        name = "cache-apt-pv-claim"
+    }
+
+    spec {
+        access_modes = ["ReadWriteOnce"]
+        resources {
+            requests = {
+                storage = var.capacities.cache-apt
+            }
+        }
+        volume_name = "cache-apt-pv"
+    }
 }
 
 resource "kubernetes_deployment" "cache-apt" {
@@ -70,8 +79,8 @@ resource "kubernetes_deployment" "cache-apt" {
 
                 volume {
                     name = "cache-apt"
-                    gce_persistent_disk {
-                        pd_name = "${google_compute_disk.cache-apt.name}"
+                    persistent_volume_claim {
+                        claim_name = "cache-apt-pv-claim"
                     }
                 }
             }

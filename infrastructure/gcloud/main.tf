@@ -9,25 +9,37 @@ variable "zone" {
 }
 
 module "gke" {
-    source   = "./gke"
+    source   = "../modules/gke"
     credentials = "${file("account.json")}"
     project  = "${var.project}"
     region   = "${var.region}"
     zone     = "${var.zone}"
     cluster_name = "${var.cluster_name}"
+
+    capacities = {
+        cache-apt: 10
+        cache-autoproj-build: 20
+        cache-autoproj-import: 10
+    }
 }
 
 module "k8s" {
-    source = "./k8s"
+    source = "../modules/k8s"
     host     = "${module.gke.host}"
 
-    credentials = "${file("account.json")}"
+    credentials = file("account.json")
     project  = "${var.project}"
     region   = "${var.region}"
     zone     = "${var.zone}"
     client_certificate     = "${module.gke.client_certificate}"
     client_key             = "${module.gke.client_key}"
     cluster_ca_certificate = "${module.gke.cluster_ca_certificate}"
+
+    capacities = {
+        cache-apt: 10
+        cache-autoproj-build: 20
+        cache-autoproj-import: 10
+    }
 }
 
 output "k8s_host" {

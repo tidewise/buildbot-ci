@@ -1,6 +1,6 @@
 account.json
-infrastructure/.terraform/
-infrastructure/terraform.tfvars
+infrastructure/gcloud/.terraform/
+infrastructure/gcloud/terraform.tfvars
 
 master/tf
 master/buildbot.tac
