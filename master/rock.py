@@ -248,21 +248,29 @@ def Bootstrap(factory, buildconf_url,
         bootstrap_script_url = f"https://raw.githubusercontent.com/rock-core/autoproj/{autoproj_branch}/bin/autoproj_bootstrap"
 
     if seed_config_path:
-        with open(seed_config_path, 'r') as f:
-            seed_config = f.read() + f"\n"
+        factory.addStep(steps.FileDownload(
+            name=f"copy user-provided seed config",
+            workerdest="user-seed-config.yml",
+            mastersrc=seed_config_path,
+            haltOnFailure=True))
     else:
-        seed_config = ""
+        factory.addStep(steps.StringDownload("{}",
+            name="Create empty user seed config file",
+            workerdest="user-seed-config.yml",
+            haltOnFailure=True))
 
-    seed_config += f"""
+    buildbot_seed_config = f"""
 import_log_enabled: false
 importer_cache_dir: "{CACHE_IMPORT_DIR}"
 separate_prefixes: true
 ROCK_SELECTED_FLAVOR: {flavor}
     """
 
-    factory.addStep(steps.StringDownload(seed_config,
-        workerdest="seed-config.yml",
-        name=f"Tuning Autoproj configuration"))
+    factory.addStep(steps.StringDownload(
+        buildbot_seed_config,
+        workerdest="buildbot-seed-config.yml",
+        name="Create the buildbot seed config file",
+        haltOnFailure=True))
 
     bootstrap_options = []
     if autoproj_branch is not None or autobuild_branch is not None:
@@ -322,7 +330,8 @@ ROCK_SELECTED_FLAVOR: {flavor}
                 haltOnFailure=True),
             util.ShellArg(command=[
                 util.Interpolate("%(prop:ruby:-ruby)s"), "autoproj_bootstrap",
-                "--seed-config=seed-config.yml",
+                "--seed-config=user-seed-config.yml",
+                "--seed-config=buildbot-seed-config.yml",
                 "--no-interactive", *bootstrap_options, vcstype, buildconf_url,
                 util.Interpolate(f"branch=%(prop:branch:-{buildconf_default_branch})s")],
                 logfile="bootstrap", haltOnFailure=True),
