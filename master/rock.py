@@ -38,9 +38,8 @@ class ImportCacheWorker(BaseWorker):
         }
         container['volumeMounts'] = [
             {
-                'name': 'cache-autoproj-import',
-                'mountPath': '/var/cache/autoproj/import',
-                'readOnly': False
+                'name': 'cache-autoproj-import-rw',
+                'mountPath': '/var/cache/autoproj/import'
             }
         ]
         spec['tolerations'] = [{
@@ -49,8 +48,10 @@ class ImportCacheWorker(BaseWorker):
         }]
         spec['volumes'] = [
             {
-                'name': 'cache-autoproj-import',
-                'persistentVolumeClaim': { 'claimName': 'cache-autoproj-import' }
+                'name': 'cache-autoproj-import-rw',
+                'persistentVolumeClaim': {
+                    'claimName': 'cache-autoproj-import-rw'
+                }
             }
         ]
         return pod_def
@@ -110,7 +111,10 @@ class BuildWorker(BaseWorker):
         spec['volumes'] = [
             {
                 'name': 'cache-autoproj-import',
-                'persistentVolumeClaim': { 'claimName': 'cache-autoproj-import' }
+                'persistentVolumeClaim': {
+                    'claimName': 'cache-autoproj-import',
+                    'readOnly': True
+                }
             },
             {
                 'name': 'cache-autoproj-build',
@@ -162,7 +166,6 @@ def Update(factory, osdeps=True, import_timeout=1200):
             )
         ],
         timeout=import_timeout,
-        locks=[cache_import_lock.access('counting')],
         haltOnFailure=True))
 
 def CleanBuildCache(factory):
@@ -192,7 +195,6 @@ def UpdateImportCache(factory, gem_compile=["ffi"]):
             util.Interpolate("--gems-compile-force=%(prop:gems_compile_force:#?|t|f)s"),
             "--gems-compile", gem_compile
         ],
-        locks=[cache_import_lock.access('exclusive')],
         haltOnFailure=True
     ))
 
@@ -525,7 +527,8 @@ def StandardSetup(c, name, buildconf_url,
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-import-cache",
             workernames=import_workers,
-            factory=import_cache_factory)
+            factory=import_cache_factory,
+            locks=[cache_import_lock.access('exclusive')])
     )
 
     build_factory = util.BuildFactory()
@@ -563,7 +566,8 @@ def StandardSetup(c, name, buildconf_url,
         util.BuilderConfig(name=f"{name}-build",
             workernames=build_workers,
             factory=build_factory,
-            properties=build_properties
+            properties=build_properties,
+            locks=[cache_import_lock.access('counting')]
         )
     )
 
