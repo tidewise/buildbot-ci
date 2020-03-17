@@ -235,6 +235,7 @@ def Bootstrap(factory, buildconf_url,
               autobuild_branch=None,
               autoproj_ci_branch=None,
               seed_config_path=None,
+              overrides_file_paths=[],
               flavor="master",
               tests=True,
               build_cache_max_size_GB=None,
@@ -331,6 +332,14 @@ ROCK_SELECTED_FLAVOR: {flavor}
                 logfile="plugins", haltOnFailure=True)
         ] + test_steps + cache_cleanup_steps,
         haltOnFailure=True))
+
+    if overrides_file_paths:
+        for file in overrides_file_paths:
+            factory.addStep(steps.FileDownload(
+                name=f"copy user-provided overrides file {file}",
+                workerdest=f"autoproj/overrides.d/{file}",
+                mastersrc=file,
+                haltOnFailure=True))
 
 def Build(factory, tests=True, test_utilities=['omniorb', 'x11'], build_timeout=1200):
     p = util.Interpolate('-p%(prop:parallel_build_level:-1)s')
@@ -464,6 +473,7 @@ def StandardSetup(c, name, buildconf_url,
                   autobuild_branch=None,
                   autoproj_ci_branch=None,
                   seed_config_path=None,
+                  overrides_file_paths=[],
                   flavor="master",
                   import_workers=["import-cache"],
                   build_workers=["build"],
@@ -491,6 +501,7 @@ def StandardSetup(c, name, buildconf_url,
               autobuild_branch=autobuild_branch,
               autoproj_ci_branch=autoproj_ci_branch,
               seed_config_path=seed_config_path,
+              overrides_file_paths=overrides_file_paths,
               flavor=flavor,
               autoproj_url=autoproj_url,
               autobuild_url=autobuild_url,
@@ -518,6 +529,7 @@ def StandardSetup(c, name, buildconf_url,
               autobuild_branch=autobuild_branch,
               autoproj_ci_branch=autoproj_ci_branch,
               seed_config_path=seed_config_path,
+              overrides_file_paths=overrides_file_paths,
               flavor=flavor,
               build_cache_max_size_GB=build_cache_max_size_GB,
               autoproj_url=autoproj_url,
