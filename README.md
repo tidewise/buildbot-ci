@@ -82,18 +82,47 @@ method. See `master/master.cfg` for a template documentation that builds
 
 ### Step 1: Building and pushing the containers
 
-The containers used by the cluster can be built using the `containers.sh` script. Run
+The containers used by the cluster can be built using the `build` script within
+`containers/`. They are named within `gcr.io/PROJECT` (where PROJECT is the
+target Google Cloud project), and tagged with the buildbot version, and an
+in-project revision (e.g. v2.7.0-3).
+
+This script assumes that base containers for the master and worker have been
+built. You may use containers provided by the buildbot project on Docker Hub.
+However, we recommend you rebuild the buildbot-master container using the
+Dockerfile provided by the buildbot project (in master/ within the buildbot
+repository), changing the Alpine version to the latest. The version on Docker
+Hub is ancient.  We've experienced random segmentation faults within musl.
+
+For buildbot-master, the script assumes you have a container tagged
+`gcr.io/PROJECT/buildbot-master-base:$VERSION-$REVISION` locally. If you'd like to use the
+stock container, just pull and tag it manually, e.g. assuming a project of
+`seabots`, version `v2.7.0` and revision `1`:
 
 ~~~
-./containers.sh <NAME_OF_PROJECT>
+docker pull buildbot/buildbot-master:v2.7.0
+docker tag buildbot/buildbot-master:v2.7.0 gcr.io/seabots/buildbot-master-base:v2.7.0-1
 ~~~
 
-Note that the script does _not_ build the buildbot-worker-base container,
-instead pulling it from the Docker Hub. If you do want to make changes to
-it, build it manually first with
+The buildbot-worker Dockerfile assumes you have a container tagged
+`buildbot-worker-base:$VERSION-$REVISION` locally. If you'd like to use the
+stock container, just pull and tag it manually, e.g.
 
 ~~~
-docker build -t rockcore/buildbot-worker-base containers/buildbot-worker-base
+docker pull buildbot/buildbot-worker:v2.7.0
+docker tag buildbot/buildbot-worker:v2.7.0 gcr.io/seabots/buildbot-worker-base:v2.7.0-1
+~~~
+
+Then build all the containers with
+
+~~~
+./build <NAME_OF_PROJECT> <VERSION> <REVISION>
+~~~
+
+and push them to the Google cloud registry with
+
+~~~
+./push <NAME_OF_PROJECT> <VERSION> <REVISION>
 ~~~
 
 ### Step 2: Setting up the infrastructure
