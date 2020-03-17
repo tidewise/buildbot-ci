@@ -51,6 +51,19 @@ The build steps assume that there is an import cache mounted in
 `/var/cache/autoproj/import` in the slave container. One may create an import
 cache update builder to update the cache.
 
+The import cache creation supports using `gem-compiler` to prebuild gems,
+speeding the update stage significantly (the update step is the longer step on
+incremental builds). Which gems get precompiled is controlled by the
+`gem_compile` array argument in `StandardSetup` or `ImportCache` (see
+[rock.py](master/rock.py)). This work out of the box for most gems, but more
+complicated gems don't work at all, or work with significant tuning:
+
+- the `rice` gem can't be precompiled for now
+- the `qtbindings` gem (qt-ruby bindings) need to be tuned during
+  precompilation. Add `qtbindings[+lib/2.5/*.so.?-lib/2.5/*.so]` to
+  `gem_compile`, and add `99-qtbindings-x86_64.rb` to the `overrides_path` array
+  argument. The gem won't be functional otherwise.
+
 ### Build cache
 
 Successfully built packages are cached so as to reduce the build cycle (dramatically)
