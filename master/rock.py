@@ -353,7 +353,7 @@ ROCK_SELECTED_FLAVOR: {flavor}
                 haltOnFailure=True))
 
 def Build(factory, tests=True, test_utilities=['omniorb', 'x11'], build_timeout=1200):
-    p = util.Interpolate('-p%(prop:parallel_build_level:-1)s')
+    p = util.Interpolate('-p%(prop:parallel_test_level:-1)s')
 
     Barrier(factory, "build")
     AutoprojStep(factory, "ci", "build", "--interactive=f", "-k", p,
@@ -489,6 +489,7 @@ def StandardSetup(c, name, buildconf_url,
                   import_workers=["import-cache"],
                   build_workers=["build"],
                   parallel_build_level=4,
+                  parallel_test_level=1,
                   import_timeout=1200,
                   build_timeout=1200,
                   build_cache_max_size_GB=None,
@@ -554,7 +555,11 @@ def StandardSetup(c, name, buildconf_url,
           tests=tests, test_utilities=test_utilities)
     BuildReport(build_factory)
 
-    build_properties = { 'parallel_build_level': parallel_build_level }
+    build_properties = {
+        'parallel_build_level': parallel_build_level,
+        'parallel_test_level': parallel_test_level
+    }
+
     build_properties.update(properties)
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-build",
