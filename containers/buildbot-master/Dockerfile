@@ -1,6 +1,5 @@
-ARG buildbot_version
-ARG revision
-FROM buildbot-master-base:$buildbot_version-$revision
+ARG buildbot_base=buildbot/buildbot-master
+FROM $buildbot_base
 
 RUN apk add cairo libjpeg-turbo libgcc 
 

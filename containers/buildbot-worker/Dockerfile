@@ -1,4 +1,4 @@
-ARG buildbot_worker_base
+ARG buildbot_base=buildbot/buildbot-worker
 
 FROM ubuntu:18.04 AS xviewer-install
 USER root
@@ -10,7 +10,7 @@ RUN apt-get update && \
     npm install -g xunit-viewer && \
     rm -rf /var/lib/apt/lists/*
 
-FROM $buildbot_worker_base
+FROM $buildbot_base
 
 USER root
 
@@ -33,5 +33,6 @@ RUN mkdir -p /var/cache/autoproj/import && \
 COPY files/etc/apt/apt.conf.d/01cache /etc/apt/apt.conf.d/01cache
 
 COPY --chown=buildbot files/home/.bundle/config /home/buildbot/.bundle/config
+ENV LD_LIBRARY_PATH=/home/buildbot/.local/share/autoproj/gems/ruby/2.5.0/gems/qtbindings-4.8.6.5-x86_64-linux/lib/2.5
 
 USER buildbot
