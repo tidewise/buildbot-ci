@@ -173,7 +173,7 @@ def CleanBuildCache(factory):
         name="Check result",
         command=["find", util.Interpolate(f"{CACHE_BUILD_BASE_DIR}/%(prop:target_buildername)s")]))
 
-def UpdateImportCache(factory):
+def UpdateImportCache(factory, gem_compile=["ffi"]):
     factory.addStep(steps.ShellCommand(
         name="Install gem-compiler to cache the precompiled gems",
         command=[
@@ -190,7 +190,7 @@ def UpdateImportCache(factory):
             CACHE_IMPORT_DIR, "--interactive=f", "-k",
             "--gems",
             util.Interpolate("--gems-compile-force=%(prop:gems_compile_force:#?|t|f)s"),
-            "--gems-compile", "rice+ruby/lib", "ffi"
+            "--gems-compile", gem_compile
         ],
         locks=[cache_import_lock.access('exclusive')],
         haltOnFailure=True
@@ -235,6 +235,7 @@ def Bootstrap(factory, buildconf_url,
               autobuild_branch=None,
               autoproj_ci_branch=None,
               seed_config_path=None,
+              overrides_file_paths=[],
               flavor="master",
               tests=True,
               build_cache_max_size_GB=None,
@@ -340,6 +341,14 @@ ROCK_SELECTED_FLAVOR: {flavor}
                 logfile="plugins", haltOnFailure=True)
         ] + test_steps + cache_cleanup_steps,
         haltOnFailure=True))
+
+    if overrides_file_paths:
+        for file in overrides_file_paths:
+            factory.addStep(steps.FileDownload(
+                name=f"copy user-provided overrides file {file}",
+                workerdest=f"autoproj/overrides.d/{file}",
+                mastersrc=file,
+                haltOnFailure=True))
 
 def Build(factory, tests=True, test_utilities=['omniorb', 'x11'], build_timeout=1200):
     p = util.Interpolate('-p%(prop:parallel_build_level:-1)s')
@@ -473,6 +482,7 @@ def StandardSetup(c, name, buildconf_url,
                   autobuild_branch=None,
                   autoproj_ci_branch=None,
                   seed_config_path=None,
+                  overrides_file_paths=[],
                   flavor="master",
                   import_workers=["import-cache"],
                   build_workers=["build"],
@@ -483,6 +493,7 @@ def StandardSetup(c, name, buildconf_url,
                   properties={},
                   tests=True,
                   test_utilities=['omniorb', 'x11'],
+                  gem_compile=["ffi"],
                   autoproj_url=AUTOPROJ_GIT_URL,
                   autobuild_url=AUTOBUILD_GIT_URL,
                   autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
@@ -500,13 +511,14 @@ def StandardSetup(c, name, buildconf_url,
               autobuild_branch=autobuild_branch,
               autoproj_ci_branch=autoproj_ci_branch,
               seed_config_path=seed_config_path,
+              overrides_file_paths=overrides_file_paths,
               flavor=flavor,
               autoproj_url=autoproj_url,
               autobuild_url=autobuild_url,
               autoproj_ci_url=autoproj_ci_url)
 
     Update(import_cache_factory, import_timeout=import_timeout)
-    UpdateImportCache(import_cache_factory)
+    UpdateImportCache(import_cache_factory, gem_compile=gem_compile)
 
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-import-cache",
@@ -527,6 +539,7 @@ def StandardSetup(c, name, buildconf_url,
               autobuild_branch=autobuild_branch,
               autoproj_ci_branch=autoproj_ci_branch,
               seed_config_path=seed_config_path,
+              overrides_file_paths=overrides_file_paths,
               flavor=flavor,
               build_cache_max_size_GB=build_cache_max_size_GB,
               autoproj_url=autoproj_url,
