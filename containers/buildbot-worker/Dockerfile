@@ -29,6 +29,7 @@ RUN apt-get update && \
 
 RUN mkdir -p /var/cache/autoproj/import && \
     mkdir -p /var/cache/autoproj/build && \
+    chown -R buildbot /var/cache/autoproj && \
     chmod -R go+rx /var/cache/autoproj
 COPY files/etc/apt/apt.conf.d/01cache /etc/apt/apt.conf.d/01cache
 
