@@ -18,6 +18,7 @@ RUN apt-get update && \
     apt-get install -y sudo ruby ruby-dev wget build-essential && \
     rm -rf /var/lib/apt/lists/*
 
+COPY files/etc/hosts /etc
 COPY files/etc/sudoers.d/buildbot /etc/sudoers.d/
 COPY files/etc/apt/apt.conf.d/01disable_suggests_recommends /etc/apt/apt.conf.d/01disable_suggests_recommends
 COPY --from=xviewer-install /usr/local/lib/node_modules /usr/local/lib/node_modules
