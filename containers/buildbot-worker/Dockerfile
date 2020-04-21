@@ -3,7 +3,7 @@ ARG buildbot_base=buildbot/buildbot-worker
 FROM ubuntu:18.04 AS xviewer-install
 USER root
 
-ARG XVIEWER_VERSION=6.0.10
+ARG XVIEWER_VERSION=6.2.1
 
 RUN apt-get update && \
     apt-get install -y nodejs npm && \
