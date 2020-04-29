@@ -178,6 +178,11 @@ def CleanBuildCache(factory):
 
 def UpdateImportCache(factory, gem_compile=["ffi"]):
     factory.addStep(steps.ShellCommand(
+        name="Fix permissions on /var/cache/autoproj",
+        command=["sudo", "chown", "buildbot", "-R", "/var/cache/autoproj"],
+        haltOnFailure=True
+    ))
+    factory.addStep(steps.ShellCommand(
         name="Install gem-compiler to cache the precompiled gems",
         command=[
             ".autoproj/bin/autoproj", "plugin", "install", "gem-compiler",
