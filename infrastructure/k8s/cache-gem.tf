@@ -13,7 +13,7 @@ resource "kubernetes_service" "cache-gem" {
 
     spec {
         selector = {
-            app = "${kubernetes_deployment.cache-gem.metadata.0.labels.app}"
+            app = kubernetes_deployment.cache-gem.metadata.0.labels.app
         }
         port {
             name = "cache-gem"
@@ -25,7 +25,7 @@ resource "kubernetes_service" "cache-gem" {
 resource "google_compute_disk" "cache-gem" {
     name  = "cache-gem"
     type  = "pd-standard"
-    zone  = "${var.zone}"
+    zone  = var.zone
     size  = "10"
 }
 
@@ -51,6 +51,7 @@ resource "kubernetes_deployment" "cache-gem" {
                 labels = {
                     app = "cache-gem"
                 }
+                namespace = "default"
             }
 
             spec {
@@ -71,7 +72,7 @@ resource "kubernetes_deployment" "cache-gem" {
                 volume {
                     name = "cache-gem"
                     gce_persistent_disk {
-                        pd_name = "${google_compute_disk.cache-gem.name}"
+                        pd_name = google_compute_disk.cache-gem.name
                     }
                 }
             }

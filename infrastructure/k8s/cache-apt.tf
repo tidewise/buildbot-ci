@@ -12,7 +12,7 @@ resource "kubernetes_service" "cache-apt" {
 
     spec {
         selector = {
-            app = "${kubernetes_deployment.cache-apt.metadata.0.labels.app}"
+            app = kubernetes_deployment.cache-apt.metadata.0.labels.app
         }
         port {
             name = "cache-apt"
@@ -24,7 +24,7 @@ resource "kubernetes_service" "cache-apt" {
 resource "google_compute_disk" "cache-apt" {
     name  = "cache-apt"
     type  = "pd-standard"
-    zone  = "${var.zone}"
+    zone  = var.zone
     size  = "10"
 }
 
@@ -50,6 +50,7 @@ resource "kubernetes_deployment" "cache-apt" {
                 labels = {
                     app = "cache-apt"
                 }
+                namespace = "default"
             }
 
             spec {
@@ -71,7 +72,7 @@ resource "kubernetes_deployment" "cache-apt" {
                 volume {
                     name = "cache-apt"
                     gce_persistent_disk {
-                        pd_name = "${google_compute_disk.cache-apt.name}"
+                        pd_name = google_compute_disk.cache-apt.name
                     }
                 }
             }
