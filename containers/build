@@ -5,6 +5,7 @@
 project=$1
 buildbot_version=$2
 revision=$3
+containers="$@"
 if test -z "$project" || test -z "$buildbot_version" || test -z "$revision"; then
     echo "usage: containers.sh PROJECT BUILDBOT_VERSION REVISION"
     exit 1
@@ -14,13 +15,31 @@ echo "Setting up for project ${project}"
 container_tag=$buildbot_version-$revision
 echo "Tag: $container_tag"
 
-docker build -t gcr.io/$project/cache-apt --pull containers/apt-cacher-ng
-docker build -t gcr.io/$project/cache-gem --pull containers/gemstash
-docker build -t gcr.io/$project/volume-nfs --pull containers/nfs
+if test -z "$containers"; then
+    containers=cache-apt cache-gem volume-nfs buildbot-master buildbot-worker
+fi
 
-docker build -t gcr.io/$project/buildbot-master:$container_tag \
-    containers/buildbot-master \
-    --build-arg=buildbot_base=gcr.io/$project/buildbot-master-base$buildbot_version
-docker build -t gcr.io/$project/buildbot-worker:$container_tag \
-    containers/buildbot-worker \
-    --build-arg=buildbot_base=gcr.io/$project/buildbot-worker-base$buildbot_version
+for name in $containers; do
+    case $name in
+        cache-apt)
+            docker build -t gcr.io/$project/cache-apt --pull containers/apt-cacher-ng
+            ;;
+        cache-gem)
+            docker build -t gcr.io/$project/cache-gem --pull containers/gemstash
+            ;;
+        volume-nfs)
+            docker build -t gcr.io/$project/volume-nfs --pull containers/nfs
+            ;;
+        buildbot-master)
+            docker build -t gcr.io/$project/buildbot-master:$container_tag \
+                containers/buildbot-master \
+                --build-arg=buildbot_base=gcr.io/$project/buildbot-master-base:$buildbot_version
+            ;;
+        buildbot-worker)
+            docker build -t gcr.io/$project/buildbot-worker:$container_tag \
+                containers/buildbot-worker \
+                --build-arg=buildbot_base=gcr.io/$project/buildbot-worker-base:$buildbot_version
+            ;;
+    esac
+done
+
