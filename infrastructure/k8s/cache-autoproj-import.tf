@@ -5,7 +5,7 @@
 resource "google_compute_disk" "cache-autoproj-import" {
     name  = "cache-autoproj-import"
     type  = "pd-standard"
-    zone  = "${var.zone}"
+    zone  = var.zone
     size  = "10"
 }
 
@@ -22,7 +22,7 @@ resource "kubernetes_persistent_volume" "cache-autoproj-import" {
         access_modes = ["ReadOnlyMany"]
         persistent_volume_source {
             gce_persistent_disk {
-                pd_name = "${google_compute_disk.cache-autoproj-import.name}"
+                pd_name = google_compute_disk.cache-autoproj-import.name
                 read_only = true
             }
 
@@ -42,7 +42,7 @@ resource "kubernetes_persistent_volume_claim" "cache-autoproj-import" {
                 storage = "10G"
             }
         }
-        volume_name = "${kubernetes_persistent_volume.cache-autoproj-import.metadata.0.name}"
+        volume_name = kubernetes_persistent_volume.cache-autoproj-import.metadata.0.name
     }
 }
 
@@ -59,7 +59,7 @@ resource "kubernetes_persistent_volume" "cache-autoproj-import-rw" {
         access_modes = ["ReadWriteOnce"]
         persistent_volume_source {
             gce_persistent_disk {
-                pd_name = "${google_compute_disk.cache-autoproj-import.name}"
+                pd_name = google_compute_disk.cache-autoproj-import.name
             }
 
         }
@@ -78,6 +78,6 @@ resource "kubernetes_persistent_volume_claim" "cache-autoproj-import-rw" {
                 storage = "10G"
             }
         }
-        volume_name = "${kubernetes_persistent_volume.cache-autoproj-import-rw.metadata.0.name}"
+        volume_name = kubernetes_persistent_volume.cache-autoproj-import-rw.metadata.0.name
     }
 }

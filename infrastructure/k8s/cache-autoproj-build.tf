@@ -10,7 +10,7 @@ resource "kubernetes_service" "cache-autoproj-build" {
 
     spec {
         selector = {
-            app = "${kubernetes_deployment.cache-autoproj-build-server.metadata.0.labels.app}"
+            app = kubernetes_deployment.cache-autoproj-build-server.metadata.0.labels.app
         }
         port {
             name = "nfs4"
@@ -30,7 +30,7 @@ resource "kubernetes_service" "cache-autoproj-build" {
 resource "google_compute_disk" "cache-autoproj-build" {
     name  = "cache-autoproj-build"
     type  = "pd-standard"
-    zone  = "${var.zone}"
+    zone  = var.zone
     size  = "20"
 }
 
@@ -69,7 +69,7 @@ resource "kubernetes_persistent_volume_claim" "cache-autoproj-build" {
                 storage = "20G"
             }
         }
-        volume_name = "${kubernetes_persistent_volume.cache-autoproj-build.metadata.0.name}"
+        volume_name = kubernetes_persistent_volume.cache-autoproj-build.metadata.0.name
     }
 }
 
@@ -95,6 +95,7 @@ resource "kubernetes_deployment" "cache-autoproj-build-server" {
                 labels = {
                     app = "cache-autoproj-build"
                 }
+                namespace = "default"
             }
 
             spec {
@@ -130,7 +131,7 @@ resource "kubernetes_deployment" "cache-autoproj-build-server" {
                 volume {
                     name = "cache-autoproj-build"
                     gce_persistent_disk {
-                        pd_name = "${google_compute_disk.cache-autoproj-build.name}"
+                        pd_name = google_compute_disk.cache-autoproj-build.name
                     }
                 }
             }
