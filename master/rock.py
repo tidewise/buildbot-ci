@@ -267,6 +267,12 @@ def Bootstrap(factory, buildconf_url,
             workerdest="user-seed-config.yml",
             haltOnFailure=True))
 
+    factory.addStep(steps.StringDownload(
+        util.Interpolate("%(prop:seed_config:-{})s\n"),
+        name="Create seed config from properties",
+        workerdest="build-properties-seed-config.yml",
+        haltOnFailure=True))
+
     buildbot_seed_config = f"""
 import_log_enabled: false
 importer_cache_dir: "{CACHE_IMPORT_DIR}"
@@ -339,6 +345,7 @@ ROCK_SELECTED_FLAVOR: {flavor}
             util.ShellArg(command=[
                 util.Interpolate("%(prop:ruby:-ruby)s"), "autoproj_bootstrap",
                 "--seed-config=user-seed-config.yml",
+                "--seed-config=build-properties-seed-config.yml",
                 "--seed-config=buildbot-seed-config.yml",
                 "--no-interactive", *bootstrap_options, vcstype, buildconf_url,
                 util.Interpolate(f"branch=%(prop:branch:-{buildconf_default_branch})s")],
