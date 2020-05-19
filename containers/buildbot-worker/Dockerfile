@@ -1,31 +1,17 @@
 ARG buildbot_base=buildbot/buildbot-worker
 
-FROM ubuntu:18.04 AS xviewer-install
-USER root
-
-ARG XVIEWER_VERSION=6.2.1
-
-RUN apt-get update && \
-    apt-get install -y nodejs npm && \
-    npm install -g xunit-viewer && \
-    rm -rf /var/lib/apt/lists/*
-
 FROM $buildbot_base
 
 USER root
 
+RUN ( curl -sL https://deb.nodesource.com/setup_12.x | bash - )
 RUN apt-get update && \
-    apt-get install -y sudo ruby ruby-dev wget build-essential && \
+    apt-get install -y sudo ruby ruby-dev wget curl build-essential nodejs && \
+    npm install -g xunit-viewer && \
     rm -rf /var/lib/apt/lists/*
 
 COPY files/etc/sudoers.d/buildbot /etc/sudoers.d/
 COPY files/etc/apt/apt.conf.d/01disable_suggests_recommends /etc/apt/apt.conf.d/01disable_suggests_recommends
-COPY --from=xviewer-install /usr/local/lib/node_modules /usr/local/lib/node_modules
-COPY --from=xviewer-install /usr/local/bin /usr/local/bin
-
-RUN apt-get update && \
-    apt-get install -y nodejs && \
-    rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /var/cache/autoproj/import && \
     mkdir -p /var/cache/autoproj/build && \
