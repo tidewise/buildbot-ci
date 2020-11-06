@@ -108,6 +108,7 @@ class BuildWorker(BaseWorker):
             'key': 'build-role',
             'operator': 'Exists'
         }]
+        spec['restartPolicy'] = 'OnFailure'
         spec['volumes'] = [
             {
                 'name': 'cache-autoproj-import',
