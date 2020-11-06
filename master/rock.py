@@ -506,6 +506,8 @@ def StandardSetup(c, name, buildconf_url,
                   import_timeout=1200,
                   build_timeout=1200,
                   build_cache_max_size_GB=None,
+                  import_properties={},
+                  build_properties={},
                   properties={},
                   tests=True,
                   test_utilities=['omniorb', 'x11'],
@@ -536,10 +538,12 @@ def StandardSetup(c, name, buildconf_url,
     Update(import_cache_factory, import_timeout=import_timeout)
     UpdateImportCache(import_cache_factory, gem_compile=gem_compile)
 
+    import_properties.update(properties)
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-import-cache",
             workernames=import_workers,
             factory=import_cache_factory,
+            properties=import_properties,
             locks=[cache_import_lock.access('exclusive')])
     )
 
@@ -568,11 +572,10 @@ def StandardSetup(c, name, buildconf_url,
           tests=tests, test_utilities=test_utilities)
     BuildReport(build_factory)
 
-    build_properties = {
+    build_properties.update({
         'parallel_build_level': parallel_build_level,
         'parallel_test_level': parallel_test_level
-    }
-
+    })
     build_properties.update(properties)
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-build",
