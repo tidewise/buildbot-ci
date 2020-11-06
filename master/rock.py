@@ -514,7 +514,8 @@ def StandardSetup(c, name, buildconf_url,
                   gem_compile=["ffi"],
                   autoproj_url=AUTOPROJ_GIT_URL,
                   autobuild_url=AUTOBUILD_GIT_URL,
-                  autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
+                  autoproj_ci_url=AUTOPROJ_CI_GIT_URL,
+                  builder_locks=[]):
 
     import_cache_factory = util.BuildFactory()
     if git_credentials:
@@ -582,7 +583,7 @@ def StandardSetup(c, name, buildconf_url,
             workernames=build_workers,
             factory=build_factory,
             properties=build_properties,
-            locks=[cache_import_lock.access('counting')]
+            locks=[cache_import_lock.access('counting')] + builder_locks
         )
     )
 
