@@ -84,13 +84,13 @@ class BuildWorker(BaseWorker):
         spec = pod_def['spec']
 
         cpu = build.getProperty('parallel_build_level', 1)
-        memory = build.getProperty('memory_per_build_process_G', 2)
+        memory_k = int(build.getProperty('memory_per_build_process_G', 1.5) * 1024)
 
         container = spec['containers'][0]
         container['resources'] = {
             'requests': {
                 'cpu': cpu,
-                'memory': f"{memory * cpu}G"
+                'memory': f"{memory_k * cpu}k"
             }
         }
         container['volumeMounts'] = [
@@ -108,6 +108,7 @@ class BuildWorker(BaseWorker):
             'key': 'build-role',
             'operator': 'Exists'
         }]
+        spec['restartPolicy'] = 'OnFailure'
         spec['volumes'] = [
             {
                 'name': 'cache-autoproj-import',
@@ -506,13 +507,16 @@ def StandardSetup(c, name, buildconf_url,
                   import_timeout=1200,
                   build_timeout=1200,
                   build_cache_max_size_GB=None,
+                  import_properties={},
+                  build_properties={},
                   properties={},
                   tests=True,
                   test_utilities=['omniorb', 'x11'],
                   gem_compile=["ffi"],
                   autoproj_url=AUTOPROJ_GIT_URL,
                   autobuild_url=AUTOBUILD_GIT_URL,
-                  autoproj_ci_url=AUTOPROJ_CI_GIT_URL):
+                  autoproj_ci_url=AUTOPROJ_CI_GIT_URL,
+                  builder_locks=[]):
 
     import_cache_factory = util.BuildFactory()
     if git_credentials:
@@ -536,10 +540,12 @@ def StandardSetup(c, name, buildconf_url,
     Update(import_cache_factory, import_timeout=import_timeout)
     UpdateImportCache(import_cache_factory, gem_compile=gem_compile)
 
+    import_properties.update(properties)
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-import-cache",
             workernames=import_workers,
             factory=import_cache_factory,
+            properties=import_properties,
             locks=[cache_import_lock.access('exclusive')])
     )
 
@@ -568,18 +574,17 @@ def StandardSetup(c, name, buildconf_url,
           tests=tests, test_utilities=test_utilities)
     BuildReport(build_factory)
 
-    build_properties = {
+    build_properties.update({
         'parallel_build_level': parallel_build_level,
         'parallel_test_level': parallel_test_level
-    }
-
+    })
     build_properties.update(properties)
     c['builders'].append(
         util.BuilderConfig(name=f"{name}-build",
             workernames=build_workers,
             factory=build_factory,
             properties=build_properties,
-            locks=[cache_import_lock.access('counting')]
+            locks=[cache_import_lock.access('counting')] + builder_locks
         )
     )
 

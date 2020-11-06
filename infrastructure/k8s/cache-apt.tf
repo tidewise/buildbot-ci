@@ -73,6 +73,7 @@ resource "kubernetes_deployment" "cache-apt" {
                     name = "cache-apt"
                     gce_persistent_disk {
                         pd_name = google_compute_disk.cache-apt.name
+                        read_only = false
                     }
                 }
             }
