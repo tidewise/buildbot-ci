@@ -84,13 +84,13 @@ class BuildWorker(BaseWorker):
         spec = pod_def['spec']
 
         cpu = build.getProperty('parallel_build_level', 1)
-        memory = build.getProperty('memory_per_build_process_G', 2)
+        memory_k = int(build.getProperty('memory_per_build_process_G', 1.5) * 1024)
 
         container = spec['containers'][0]
         container['resources'] = {
             'requests': {
                 'cpu': cpu,
-                'memory': f"{memory * cpu}G"
+                'memory': f"{memory_k * cpu}k"
             }
         }
         container['volumeMounts'] = [
