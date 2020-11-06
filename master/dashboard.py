@@ -34,17 +34,25 @@ def dashboard(app):
     # This code fetches build data from the data api, and give it to the
     # template
     builders = app.buildbot_api.dataGet("/builders")
-    builds   = app.buildbot_api.dataGet("/builds", limit=20, order=["-buildid"])
 
-    # properties are actually not used in the template example, but this is
-    # how you get more properties
-    for build in builds:
-        build['properties'] = app.buildbot_api.dataGet(
-            ("builds", build['buildid'], "properties"))
+    offset = 0
+    build_info = []
+    while len(build_info) < 30:
+        builds = app.buildbot_api.dataGet("/builds", limit=5, offset=offset, order=["-buildid"])
+        builds = [b for b in builds if b['results'] != None and b['results'] <= 2]
 
-    builds = compute_build_info(builds, builders)
-    toplevel_builds = compute_toplevel_builds(builds)
-    return render_template('dashboard.html', builds=builds, toplevel_builds=toplevel_builds)
+        # properties are actually not used in the template example, but this is
+        # how you get more properties
+        for build in builds:
+            build['properties'] = app.buildbot_api.dataGet(
+                ("builds", build['buildid'], "properties"))
+
+        new_info = compute_build_info(builds, builders)
+        offset += 5
+        build_info.extend(new_info)
+
+    toplevel_builds = compute_toplevel_builds(build_info)
+    return render_template('dashboard.html', builds=build_info, toplevel_builds=toplevel_builds)
 
 def test_results_get(reports_name, packagename):
     build_reports = Path("build_reports").resolve(strict=True)
